@@ -1,13 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUser()
   const [generating, setGenerating] = useState(false)
   const [project, setProject] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     type: 'short_film',
     genre: 'drama',
@@ -18,6 +17,7 @@ export default function DashboardPage() {
 
   const generateProject = async () => {
     setGenerating(true)
+    setError(null)
     try {
       const res = await fetch('/api/generate-project', {
         method: 'POST',
@@ -25,16 +25,17 @@ export default function DashboardPage() {
         body: JSON.stringify(formData),
       })
       const data = await res.json()
-      if (data.project) {
+      if (data.error) {
+        setError(data.error + (data.message ? ': ' + data.message : ''))
+      } else if (data.project) {
         setProject(data.project)
       }
     } catch (error) {
       console.error('Error:', error)
+      setError('Failed to generate project. Please try again.')
     }
     setGenerating(false)
   }
-
-  if (!isLoaded) return <div>Loading...</div>
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white">
@@ -47,8 +48,8 @@ export default function DashboardPage() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-white/60">Welcome, {user?.firstName}</span>
           <Link href="/" className="text-white/60 hover:text-white">Home</Link>
+          <Link href="/projects" className="text-white/60 hover:text-white">Browse</Link>
         </div>
       </nav>
 
@@ -141,6 +142,13 @@ export default function DashboardPage() {
           >
             {generating ? 'Generating...' : '✨ Generate AI Project'}
           </button>
+
+          {error && (
+            <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+              <p className="font-semibold">Error:</p>
+              <p>{error}</p>
+            </div>
+          )}
         </div>
 
         {/* Generated Project */}

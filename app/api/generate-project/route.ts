@@ -16,10 +16,11 @@ export async function POST(req: Request) {
       }, { status: 503 })
     }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Auth temporarily disabled for demo
+    // const { userId } = await auth()
+    // if (!userId) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const { type, genre, city, duration, budget } = await req.json()
 
