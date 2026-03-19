@@ -2,148 +2,157 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-
-// Mock projects data - in real app this comes from database
-const mockProjects = [
-  {
-    id: '1',
-    title: 'The Last Bookstore',
-    type: 'Short Film',
-    genre: 'Drama',
-    city: 'London',
-    logline: 'In a world where all books are digital, an elderly woman runs the last physical bookstore...',
-    roles_needed: ['Director', 'Lead Actor (60+)', 'DP', 'Sound'],
-    status: 'recruiting',
-    created_at: '2026-03-15',
-  },
-  {
-    id: '2',
-    title: 'Neon Dreams',
-    type: 'Music Video',
-    genre: 'Electronic',
-    city: 'Manchester',
-    logline: 'Surreal journey through a cyberpunk city. Dancer moves through neon-lit streets...',
-    roles_needed: ['Director', 'Dancer', 'DP', 'Editor'],
-    status: 'recruiting',
-    created_at: '2026-03-14',
-  },
-  {
-    id: '3',
-    title: 'Blue Hour Workers',
-    type: 'Photo Series',
-    genre: 'Documentary',
-    city: 'London',
-    logline: 'Portraits of night shift workers during the magical time between night and dawn...',
-    roles_needed: ['Photographer', '3 Subjects'],
-    status: 'recruiting',
-    created_at: '2026-03-13',
-  },
-]
+import { STREAMS, MOCK_PROJECTS } from '@/lib/data'
 
 export default function ProjectsPage() {
-  const [filter, setFilter] = useState({
-    type: 'all',
-    city: 'all',
-    role: 'all',
+  const [streamFilter, setStreamFilter] = useState('all')
+  const [locationFilter, setLocationFilter] = useState('all')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredProjects = MOCK_PROJECTS.filter((project) => {
+    if (streamFilter !== 'all' && project.stream !== streamFilter) return false
+    if (locationFilter !== 'all' && !project.location.toLowerCase().includes(locationFilter.toLowerCase())) return false
+    if (roleFilter !== 'all' && !project.roles.some(r => r.role.toLowerCase().includes(roleFilter.toLowerCase()) && !r.filled)) return false
+    if (searchQuery && !project.title.toLowerCase().includes(searchQuery.toLowerCase()) && !project.description.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    return true
   })
 
+  const uniqueLocations = [...new Set(MOCK_PROJECTS.map(p => p.location))]
+  const uniqueRoles = [...new Set(MOCK_PROJECTS.flatMap(p => p.roles.filter(r => !r.filled).map(r => r.role)))]
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white">
+    <div className="min-h-screen bg-[#030712] text-white">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-slate-950/80">
-        <div className="flex items-center gap-2">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
+        <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🎬</span>
           <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             ShowBizy
           </span>
-        </div>
+        </Link>
         <div className="flex items-center gap-6 text-sm">
-          <Link href="/" className="text-white/50 hover:text-white">Home</Link>
-          <Link href="/dashboard" className="text-white/50 hover:text-white">Dashboard</Link>
-          <Link href="/projects" className="text-white">Browse Projects</Link>
+          <Link href="/" className="text-white/50 hover:text-white transition">Home</Link>
+          <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
+          <Link href="/projects" className="text-white font-medium">Projects</Link>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Browse Projects</h1>
-            <p className="text-white/50">Find AI-generated projects looking for team members</p>
-          </div>
-          <Link 
-            href="/dashboard" 
-            className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition"
-          >
-            + Create Project
-          </Link>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Browse Projects</h1>
+          <p className="text-white/50">AI-generated projects looking for talented creatives like you</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-4 mb-8">
-          <select 
-            className="bg-white/5 border border-white/10 rounded-lg px-4 py-2"
-            value={filter.type}
-            onChange={(e) => setFilter({...filter, type: e.target.value})}
+        {/* Search & Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search projects..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/30 focus:outline-none focus:border-purple-500 transition"
+            />
+          </div>
+          <select
+            value={streamFilter}
+            onChange={(e) => setStreamFilter(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition"
           >
-            <option value="all">All Types</option>
-            <option value="short_film">Short Film</option>
-            <option value="music_video">Music Video</option>
-            <option value="photo_series">Photo Series</option>
+            <option value="all">All Streams</option>
+            {STREAMS.map(s => (
+              <option key={s.id} value={s.name}>{s.icon} {s.name}</option>
+            ))}
           </select>
-          <select 
-            className="bg-white/5 border border-white/10 rounded-lg px-4 py-2"
-            value={filter.city}
-            onChange={(e) => setFilter({...filter, city: e.target.value})}
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition"
           >
-            <option value="all">All Cities</option>
-            <option value="london">London</option>
-            <option value="manchester">Manchester</option>
-            <option value="bristol">Bristol</option>
+            <option value="all">All Locations</option>
+            {uniqueLocations.map(l => (
+              <option key={l} value={l}>{l}</option>
+            ))}
           </select>
-          <select 
-            className="bg-white/5 border border-white/10 rounded-lg px-4 py-2"
-            value={filter.role}
-            onChange={(e) => setFilter({...filter, role: e.target.value})}
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition"
           >
             <option value="all">All Roles</option>
-            <option value="director">Director</option>
-            <option value="actor">Actor</option>
-            <option value="dp">Cinematographer</option>
-            <option value="editor">Editor</option>
+            {uniqueRoles.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
           </select>
         </div>
+
+        {/* Results count */}
+        <p className="text-sm text-white/40 mb-6">{filteredProjects.length} projects found</p>
 
         {/* Projects Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockProjects.map((project) => (
-            <div key={project.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-purple-500/30 transition">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">{project.type}</span>
-                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">{project.status}</span>
+          {filteredProjects.map((project) => (
+            <Link
+              key={project.id}
+              href={`/projects/${project.id}`}
+              className="group bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.05] hover:border-purple-500/20 transition-all duration-300"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{project.streamIcon}</span>
+                  <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">{project.stream}</span>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  project.status === 'recruiting'
+                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                    : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                }`}>
+                  {project.status}
+                </span>
               </div>
-              
-              <h3 className="text-xl font-bold mb-2">{project.title}</h3>
-              <p className="text-sm text-white/50 mb-3">{project.genre} • {project.city}</p>
-              
-              <p className="text-white/60 text-sm mb-4 line-clamp-2">{project.logline}</p>
-              
-              <div className="mb-4">
-                <p className="text-xs text-white/40 mb-2">ROLES NEEDED:</p>
-                <div className="flex flex-wrap gap-2">
-                  {project.roles_needed.map((role) => (
-                    <span key={role} className="text-xs bg-white/10 px-2 py-1 rounded-full text-white/70">
-                      {role}
-                    </span>
-                  ))}
+
+              <h3 className="text-xl font-bold mb-1 group-hover:text-purple-300 transition">{project.title}</h3>
+              <p className="text-sm text-white/40 mb-3">{project.genre} • {project.location} • {project.timeline}</p>
+              <p className="text-white/50 text-sm mb-4 leading-relaxed line-clamp-2">{project.description}</p>
+
+              {/* Team progress bar */}
+              <div className="mb-3">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-white/40">Team</span>
+                  <span className="text-white/50">{project.filledRoles}/{project.teamSize} joined</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all"
+                    style={{ width: `${(project.filledRoles / project.teamSize) * 100}%` }}
+                  />
                 </div>
               </div>
-              
-              <button className="w-full bg-purple-600/30 border border-purple-500/30 py-3 rounded-xl font-semibold hover:bg-purple-600/50 transition">
-                View Project →
-              </button>
-            </div>
+
+              {/* Roles needed */}
+              <div className="flex flex-wrap gap-1.5">
+                {project.roles.filter(r => !r.filled).slice(0, 4).map((r, i) => (
+                  <span key={i} className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
+                    {r.role}
+                  </span>
+                ))}
+                {project.roles.filter(r => !r.filled).length > 4 && (
+                  <span className="text-xs text-white/30">+{project.roles.filter(r => !r.filled).length - 4} more</span>
+                )}
+              </div>
+            </Link>
           ))}
         </div>
+
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-4xl mb-4">🔍</p>
+            <h3 className="text-xl font-bold mb-2">No projects found</h3>
+            <p className="text-white/50">Try adjusting your filters or search query</p>
+          </div>
+        )}
       </div>
     </div>
   )

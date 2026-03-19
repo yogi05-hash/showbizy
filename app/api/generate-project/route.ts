@@ -14,61 +14,52 @@ export async function POST(req: Request) {
       }, { status: 503 })
     }
 
-    const { type, genre, city, duration, budget } = await req.json()
+    const { talentProfiles, stream, location } = await req.json()
 
-    const prompt = `Create a complete film project brief for a ${duration} ${genre} ${type} to be shot in ${city} with a budget of £${budget}.
+    const prompt = `You are ShowBizy AI — a creative project generator for a platform that matches creative talent with AI-generated projects.
 
-Generate a JSON object with the following structure:
+Given the following available talent in ${location || 'London'}:
+${talentProfiles ? JSON.stringify(talentProfiles) : 'A mix of directors, actors, cinematographers, editors, photographers, musicians, designers, and content creators.'}
+
+Stream focus: ${stream || 'Any creative stream'}
+
+Generate a compelling, achievable creative project brief. Return a JSON object:
+
 {
   "title": "Compelling project title",
+  "stream": "One of: Film & Video, Music, Fashion & Modelling, Influencer & Content, Performing Arts, Visual Arts, Events & Live, Brands & Businesses",
+  "genre": "Specific genre/style",
   "logline": "One sentence hook (max 30 words)",
-  "synopsis": "3-4 paragraph story summary including beginning, middle, and end",
-  "characters": [
-    {
-      "name": "Character name",
-      "age": "Age range",
-      "description": "Physical and personality description",
-      "archetype": "Character archetype"
-    }
-  ],
-  "locations": [
-    {
-      "name": "Location name",
-      "description": "Detailed description of setting",
-      "type": "interior/exterior",
-      "scenes": ["Scene descriptions"]
-    }
-  ],
-  "visual_style": {
-    "mood": "Overall mood/atmosphere",
-    "color_palette": "Color scheme description",
-    "cinematography": "Camera work style",
-    "references": ["Film references"]
-  },
-  "production_notes": {
-    "shooting_days": number,
-    "crew_size": "Small/Medium/Large",
-    "equipment_needs": ["Camera", "Lighting", "Sound", etc.],
-    "special_requirements": ["Any special needs"]
-  },
+  "description": "2-3 paragraph project description with creative vision, concept, and what makes it unique",
+  "mood_style": "Visual/creative style description and references",
   "roles_needed": [
     {
-      "role": "Job title",
-      "description": "What they do",
+      "role": "Job title (e.g. Director, Model, Illustrator)",
+      "description": "What this person will do on the project",
       "skills_required": ["Required skills"]
     }
   ],
-  "distribution_strategy": ["Film festivals", "Online platforms", etc.]
+  "timeline": {
+    "total_weeks": number,
+    "phases": [
+      { "name": "Pre-production", "duration": "X days/weeks", "tasks": ["task1", "task2"] },
+      { "name": "Production", "duration": "X days/weeks", "tasks": ["task1", "task2"] },
+      { "name": "Post-production", "duration": "X days/weeks", "tasks": ["task1", "task2"] },
+      { "name": "Published", "duration": "Launch date relative" }
+    ]
+  },
+  "location_details": "Specific location suggestions within the city",
+  "deliverables": ["Final deliverable 1", "Final deliverable 2"]
 }
 
-Make it creative, specific, and achievable on the given budget. Include 3-5 characters and 2-4 locations. Make the story compelling and original.`
+Make it creative, specific, achievable with a small team (3-8 people), and exciting enough that talented creatives would want to join. The project should feel like a real creative brief, not a template.`
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert film producer and screenwriter who creates compelling, achievable indie film projects. You understand budget constraints and realistic production requirements.'
+          content: 'You are an expert creative director who generates inspiring, achievable project briefs across film, music, fashion, content, performing arts, visual arts, events, and brand campaigns. You understand how to assemble diverse creative teams and create projects that build portfolios and careers.'
         },
         {
           role: 'user',
@@ -76,20 +67,16 @@ Make it creative, specific, and achievable on the given budget. Include 3-5 char
         }
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.8,
+      temperature: 0.9,
     })
 
     const projectData = JSON.parse(completion.choices[0].message.content || '{}')
 
     const fullProject = {
       ...projectData,
-      type,
-      genre,
-      city,
-      duration,
-      budget_estimate: budget,
-      timeline_weeks: Math.ceil(projectData.production_notes?.shooting_days / 5) + 4,
+      location: location || 'London, UK',
       status: 'draft',
+      created_at: new Date().toISOString(),
     }
 
     return NextResponse.json({ project: fullProject })

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShowBizy — AI Creates Projects, Teams Form, Credits Roll",
-  description: "ShowBizy uses AI to generate complete film, music, and photo projects—then assembles the perfect team of directors, actors, cinematographers & crew to bring them to life.",
+  title: "ShowBizy — Don't find work. Let work find you.",
+  description: "AI creates creative projects and assembles local teams of creatives to execute them. Film, Music, Fashion, Content, Performing Arts, Visual Arts, Events & Brands.",
 };
 
 export default function RootLayout({
