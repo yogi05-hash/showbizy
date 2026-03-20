@@ -10,6 +10,46 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const project = MOCK_PROJECTS.find(p => p.id === id)
   const [activeTab, setActiveTab] = useState<'brief' | 'team' | 'chat' | 'files'>('brief')
   const [joined, setJoined] = useState(false)
+  const [joining, setJoining] = useState(false)
+
+  const handleJoin = async () => {
+    if (joined || !project) {
+      setJoined(false)
+      return
+    }
+    setJoining(true)
+    setJoined(true)
+
+    // Notify existing team members via email (mock data for now)
+    try {
+      const filledMembers = project.roles.filter(r => r.filled && r.member)
+      await fetch('/api/emails/team-joined', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamMembers: filledMembers.map(r => ({
+            name: r.member?.name || '',
+            email: `${(r.member?.name || 'user').toLowerCase().replace(/\s+/g, '.')}@example.com`,
+            skills: [],
+          })),
+          newMember: {
+            name: 'You',
+            email: 'user@example.com',
+            skills: ['Creative'],
+          },
+          project: {
+            id: project.id,
+            title: project.title,
+            stream: project.stream,
+            location: project.location,
+          },
+        }),
+      })
+    } catch (err) {
+      console.error('Failed to send team-joined email:', err)
+    }
+    setJoining(false)
+  }
 
   if (!project) {
     return (
@@ -61,14 +101,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-white/50">{project.genre} • {project.location} • {project.timeline}</p>
           </div>
           <button
-            onClick={() => setJoined(!joined)}
+            onClick={handleJoin}
+            disabled={joining}
             className={`px-8 py-3 rounded-xl font-bold text-sm transition shrink-0 ${
               joined
                 ? 'bg-green-500/10 border border-green-500/30 text-green-400'
                 : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 shadow-lg shadow-purple-500/25'
-            }`}
+            } ${joining ? 'opacity-50 cursor-wait' : ''}`}
           >
-            {joined ? '✓ Joined' : 'Join this project →'}
+            {joining ? 'Joining...' : joined ? '✓ Joined' : 'Join this project →'}
           </button>
         </div>
 
