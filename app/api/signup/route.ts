@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
+import { supabaseAdmin } from '@/lib/supabase'
 
 const transporter = nodemailer.createTransport({
   host: 'smtppro.zoho.in',
@@ -16,7 +17,26 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, email, streams, skills, city, availability, portfolio } = body
 
-    // TODO: Save to database (Supabase) when connected
+    // Save to Supabase
+    const { error: dbError } = await supabaseAdmin
+      .from('showbizy_users')
+      .insert({
+        name,
+        email,
+        streams: streams || [],
+        skills: skills || [],
+        city,
+        availability: availability || 'full-time',
+        portfolio,
+      })
+
+    if (dbError) {
+      console.error('DB error:', dbError)
+      if (dbError.code === '23505') {
+        return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
+      }
+      return NextResponse.json({ error: 'Failed to create account' }, { status: 500 })
+    }
 
     // Send welcome email via Zoho SMTP
     const streamsList = (streams || []).join(', ')

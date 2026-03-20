@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.4",
-    "@supabase/supabase-js": "^2.99.2",
+    "@supabase/supabase-js": "^2.99.3",
     "next": "16.1.6",
     "nodemailer": "^8.0.3",
     "openai": "^6.29.0",
