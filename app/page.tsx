@@ -33,7 +33,7 @@ export default function Home() {
           <Link href="#pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/signup" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Log in</Link>
+          <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>
           <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
             Get early access
           </Link>
