@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { STREAMS } from '@/lib/data'
 
 const STEPS = ['Account', 'Streams', 'Skills', 'Details']
 
 export default function SignupPage() {
+  const router = useRouter()
   const [step, setStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,9 +59,29 @@ export default function SignupPage() {
     }
   }
 
-  const handleSubmit = () => {
-    // In production, this would call an API
-    alert('🎉 Welcome to ShowBizy! Your profile has been created.')
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    try {
+      const streamNames = selectedStreams.map(s => s.name)
+      
+      await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          streams: streamNames,
+        }),
+      })
+
+      const params = new URLSearchParams({
+        name: formData.name,
+        streams: streamNames.join(','),
+        skills: formData.skills.join(','),
+      })
+      router.push(`/welcome?${params.toString()}`)
+    } catch {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -305,10 +328,20 @@ export default function SignupPage() {
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!canProceed()}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                disabled={!canProceed() || isSubmitting}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Create account ✨
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Creating your profile...
+                  </>
+                ) : (
+                  'Create account ✨'
+                )}
               </button>
             )}
           </div>
