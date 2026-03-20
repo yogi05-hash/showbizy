@@ -5,22 +5,53 @@ import { sendWelcomeEmail } from '@/lib/email'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, streams, skills, city, availability, portfolio } = body
+    const { name, email, streams, skills, city, availability, portfolio, avatar } = body
 
-    // Save to Supabase
-    const { data: userData, error: dbError } = await supabaseAdmin
+    // TODO: Add avatar column to showbizy_users table in Supabase
+    // ALTER TABLE showbizy_users ADD COLUMN avatar TEXT;
+
+    // Try saving with avatar first, fall back to without if column doesn't exist
+    let userData = null
+    let dbError = null
+
+    const insertData: Record<string, unknown> = {
+      name,
+      email,
+      streams: streams || [],
+      skills: skills || [],
+      city,
+      availability: availability || 'full-time',
+      portfolio,
+    }
+
+    // Include avatar if provided
+    if (avatar) {
+      insertData.avatar = avatar
+    }
+
+    const result = await supabaseAdmin
       .from('showbizy_users')
-      .insert({
-        name,
-        email,
-        streams: streams || [],
-        skills: skills || [],
-        city,
-        availability: availability || 'full-time',
-        portfolio,
-      })
+      .insert(insertData)
       .select()
       .single()
+
+    userData = result.data
+    dbError = result.error
+
+    // If avatar column doesn't exist, retry without it
+    if (dbError && dbError.message?.includes('avatar')) {
+      console.warn('Avatar column not found, saving without avatar:', dbError.message)
+      const { avatar: _removed, ...insertWithoutAvatar } = insertData
+      void _removed
+      const retryResult = await supabaseAdmin
+        .from('showbizy_users')
+        .insert(insertWithoutAvatar)
+        .select()
+        .single()
+
+      userData = retryResult.data
+      dbError = retryResult.error
+    }
 
     if (dbError) {
       console.error('DB error:', dbError)
@@ -44,6 +75,11 @@ export async function POST(request: Request) {
     } catch (emailError) {
       console.error('Email send error:', emailError)
       // Don't fail the signup if email fails
+    }
+
+    // Include avatar in response for localStorage
+    if (avatar && userData) {
+      userData.avatar = avatar
     }
 
     return NextResponse.json({ success: true, user: userData })

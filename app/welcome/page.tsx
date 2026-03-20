@@ -2,13 +2,52 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useState, useEffect, useCallback } from 'react'
 
 function WelcomeContent() {
   const searchParams = useSearchParams()
   const name = searchParams.get('name') || 'Creative'
   const streams = searchParams.get('streams') || ''
   const skills = searchParams.get('skills') || ''
+  const [resendState, setResendState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
+  const [cooldown, setCooldown] = useState(0)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => setCooldown(c => c - 1), 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
+
+  const handleResendEmail = useCallback(async () => {
+    if (cooldown > 0) return
+    setResendState('loading')
+    setErrorMsg('')
+    try {
+      // Get email from localStorage
+      const stored = localStorage.getItem('showbizy_user')
+      const email = stored ? JSON.parse(stored).email : null
+      if (!email) {
+        setErrorMsg('Email not found. Please sign up again.')
+        setResendState('error')
+        return
+      }
+      const res = await fetch('/api/emails/resend-welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to resend email')
+      }
+      setResendState('sent')
+      setCooldown(60)
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Something went wrong')
+      setResendState('error')
+    }
+  }, [cooldown])
 
   return (
     <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center px-4">
@@ -76,6 +115,31 @@ function WelcomeContent() {
               <div>
                 <p className="font-medium">Check your email</p>
                 <p className="text-white/40 text-sm">We&apos;ve sent a confirmation to your inbox</p>
+                <button
+                  onClick={handleResendEmail}
+                  disabled={cooldown > 0 || resendState === 'loading'}
+                  className="mt-2 text-sm text-purple-400 hover:text-purple-300 disabled:text-white/30 disabled:cursor-not-allowed transition inline-flex items-center gap-1.5"
+                >
+                  {resendState === 'loading' ? (
+                    <>
+                      <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Sending...
+                    </>
+                  ) : cooldown > 0 ? (
+                    `Resend in ${cooldown}s`
+                  ) : (
+                    '📧 Resend confirmation email'
+                  )}
+                </button>
+                {resendState === 'sent' && (
+                  <p className="text-xs text-green-400 mt-1">✓ Email sent! Check your inbox.</p>
+                )}
+                {resendState === 'error' && errorMsg && (
+                  <p className="text-xs text-red-400 mt-1">{errorMsg}</p>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-4">

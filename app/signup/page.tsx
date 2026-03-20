@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { STREAMS } from '@/lib/data'
@@ -11,16 +11,46 @@ export default function SignupPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
+    avatar: '',
     streams: [] as string[],
     skills: [] as string[],
     city: '',
     availability: 'full-time',
     portfolio: '',
   })
+
+  const handleAvatarFile = useCallback((file: File) => {
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Please upload a JPG, PNG, or WebP image')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5MB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = reader.result as string
+      setAvatarPreview(base64)
+      setFormData(prev => ({ ...prev, avatar: base64 }))
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleAvatarFile(file)
+  }, [handleAvatarFile])
 
   const toggleStream = (id: string) => {
     setFormData(prev => ({
@@ -70,6 +100,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           ...formData,
           streams: streamNames,
+          avatar: formData.avatar || undefined,
         }),
       })
 
@@ -80,6 +111,7 @@ export default function SignupPage() {
         id: data.user?.id || '',
         name: formData.name,
         email: formData.email,
+        avatar: formData.avatar || '',
         streams: streamNames,
         skills: formData.skills,
         city: formData.city,
@@ -182,6 +214,69 @@ export default function SignupPage() {
                   {formData.password.length >= 6 && (
                     <p className="text-xs text-green-400 mt-1.5">✓ Password looks good</p>
                   )}
+                </div>
+
+                {/* Avatar Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-3">Profile photo <span className="text-white/30">(optional)</span></label>
+                  <div className="flex items-center gap-5">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={handleDrop}
+                      className={`relative w-20 h-20 rounded-full cursor-pointer overflow-hidden group transition-all duration-200 ${
+                        dragOver
+                          ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-[#030712]'
+                          : 'hover:ring-2 hover:ring-purple-500/50 hover:ring-offset-2 hover:ring-offset-[#030712]'
+                      } ${avatarPreview ? '' : 'bg-white/5 border-2 border-dashed border-white/20'}`}
+                    >
+                      {avatarPreview ? (
+                        <>
+                          <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <svg className="w-7 h-7 text-white/30 group-hover:text-purple-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-sm text-purple-400 hover:text-purple-300 transition font-medium"
+                      >
+                        {avatarPreview ? 'Change photo' : 'Upload photo'}
+                      </button>
+                      <p className="text-xs text-white/30 mt-1">JPG, PNG or WebP. Max 5MB.</p>
+                      {avatarPreview && (
+                        <button
+                          type="button"
+                          onClick={() => { setAvatarPreview(null); setFormData(prev => ({ ...prev, avatar: '' })) }}
+                          className="text-xs text-red-400/60 hover:text-red-400 transition mt-1"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarFile(f) }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

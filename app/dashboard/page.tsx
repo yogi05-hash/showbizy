@@ -9,6 +9,7 @@ interface UserData {
   id: string
   name: string
   email: string
+  avatar?: string
   streams: string[]
   skills: string[]
   city: string
@@ -61,7 +62,7 @@ export default function DashboardPage() {
     'Events & Live': '🎪', 'Brands & Businesses': '💼',
   }
 
-  const userAvatar = streamEmojis[user.streams?.[0]] || '🎬'
+  const userInitial = user.name?.charAt(0)?.toUpperCase() || '?'
 
   const matchedProjects = MOCK_PROJECTS.filter(p =>
     user.streams?.includes(p.stream) || p.location?.includes(user.city || '')
@@ -88,8 +89,12 @@ export default function DashboardPage() {
           <Link href="/dashboard" className="text-white font-medium">Dashboard</Link>
           <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <button onClick={handleSignOut} className="text-white/50 hover:text-white transition">Sign out</button>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-lg">
-            {userAvatar}
+          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-lg overflow-hidden">
+            {user.avatar ? (
+              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-bold">{userInitial}</span>
+            )}
           </div>
         </div>
       </nav>
@@ -186,12 +191,19 @@ export default function DashboardPage() {
             {/* Profile Card */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-2xl">
-                  {userAvatar}
+                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-2xl overflow-hidden">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl font-bold">{userInitial}</span>
+                  )}
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">{user.name}</h3>
                   <p className="text-white/40 text-sm">{user.city || 'Location not set'}</p>
+                  <Link href="/profile/edit" className="text-xs text-purple-400 hover:text-purple-300 transition">
+                    Edit profile →
+                  </Link>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
