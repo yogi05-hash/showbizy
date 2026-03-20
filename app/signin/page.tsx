@@ -31,6 +31,11 @@ export default function SignInPage() {
         return
       }
 
+      // Store user data for session persistence
+      if (data.user) {
+        localStorage.setItem('showbizy_user', JSON.stringify(data.user))
+      }
+
       router.push('/dashboard')
     } catch {
       setError('Something went wrong. Please try again.')

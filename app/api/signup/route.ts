@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const { name, email, streams, skills, city, availability, portfolio } = body
 
     // Save to Supabase
-    const { error: dbError } = await supabaseAdmin
+    const { data: userData, error: dbError } = await supabaseAdmin
       .from('showbizy_users')
       .insert({
         name,
@@ -19,6 +19,8 @@ export async function POST(request: Request) {
         availability: availability || 'full-time',
         portfolio,
       })
+      .select()
+      .single()
 
     if (dbError) {
       console.error('DB error:', dbError)
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
       // Don't fail the signup if email fails
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, user: userData })
   } catch (error) {
     console.error('Signup error:', error)
     return NextResponse.json({ error: 'Failed to create account' }, { status: 500 })

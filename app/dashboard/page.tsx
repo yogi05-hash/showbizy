@@ -1,171 +1,179 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { MOCK_PROJECTS } from '@/lib/data'
 
-// Simulated user data
-const USER = {
-  name: 'Alex Chen',
-  avatar: '👨‍🎬',
-  streams: ['Film & Video', 'Music'],
-  skills: ['Director', 'Writer', 'Producer'],
-  city: 'London',
-  memberSince: 'March 2026',
-  projectsCompleted: 3,
-  projectsActive: 2,
+interface UserData {
+  id: string
+  name: string
+  email: string
+  streams: string[]
+  skills: string[]
+  city: string
+  availability: string
+  portfolio: string
+  created_at: string
 }
 
 const NOTIFICATIONS = [
-  { id: '1', type: 'match', message: 'New project match: "The Last Bookstore" needs a Director in London', time: '2h ago', unread: true },
-  { id: '2', type: 'message', message: 'Sana Mirza sent a message in "The Last Bookstore" chat', time: '4h ago', unread: true },
-  { id: '3', type: 'update', message: '"Neon Dreams" milestone updated: Pre-production complete', time: '1d ago', unread: false },
-  { id: '4', type: 'invite', message: 'You\'ve been invited to join "Concrete Canvas"', time: '2d ago', unread: false },
+  { id: '1', type: 'match', message: 'New project match based on your skills and location', time: '2h ago', unread: true },
+  { id: '2', type: 'system', message: 'Our AI is scanning London for projects matching your profile', time: '4h ago', unread: true },
+  { id: '3', type: 'update', message: 'Welcome to ShowBizy! Complete your portfolio to get better matches', time: 'Just now', unread: true },
 ]
 
 const FEED_ITEMS = [
-  { id: '1', user: 'ShowBizy AI', avatar: '🤖', content: '3 new Film & Video projects generated in London this week.', time: '1h ago', type: 'system' },
-  { id: '2', user: 'Kai Rivera', avatar: '💃', content: 'Just wrapped production on "Neon Dreams"! Check out the BTS shots 📸', time: '3h ago', type: 'post' },
-  { id: '3', user: 'Jamie Park', avatar: '🧑‍💻', content: 'Looking for a Sound Designer for a quick turnaround project in East London. DM me!', time: '5h ago', type: 'post' },
-  { id: '4', user: 'ShowBizy AI', avatar: '🤖', content: 'New stream added: Events & Live! Check out immersive event projects near you.', time: '1d ago', type: 'system' },
+  { id: '1', user: 'ShowBizy AI', avatar: '🤖', content: 'New projects generated in your area this week. Check your matches!', time: '1h ago', type: 'system' },
+  { id: '2', user: 'ShowBizy AI', avatar: '🤖', content: 'Tip: Add a portfolio link to your profile to get 3x more project matches.', time: '3h ago', type: 'system' },
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<UserData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('showbizy_user')
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored))
+      } catch {
+        router.push('/signin')
+      }
+    } else {
+      router.push('/signin')
+    }
+    setLoading(false)
+  }, [router])
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+      </div>
+    )
+  }
+
+  const streamEmojis: Record<string, string> = {
+    'Film & Video': '🎬', 'Music': '🎵', 'Fashion & Modelling': '📸',
+    'Influencer & Content': '📱', 'Performing Arts': '🎭', 'Visual Arts': '🎨',
+    'Events & Live': '🎪', 'Brands & Businesses': '💼',
+  }
+
+  const userAvatar = streamEmojis[user.streams?.[0]] || '🎬'
+
   const matchedProjects = MOCK_PROJECTS.filter(p =>
-    USER.streams.includes(p.stream) || p.location.includes(USER.city)
+    user.streams?.includes(p.stream) || p.location?.includes(user.city || '')
   ).slice(0, 3)
 
   const activeProjects = MOCK_PROJECTS.slice(0, 2)
 
+  const memberSince = new Date(user.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+
+  const handleSignOut = () => {
+    localStorage.removeItem('showbizy_user')
+    router.push('/')
+  }
+
   return (
     <div className="min-h-screen bg-[#030712] text-white">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
-        <Link href="/" className="flex items-center gap-2">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 sticky top-0 z-50 bg-[#030712]/90 backdrop-blur-xl">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-2xl">🎬</span>
-          <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            ShowBizy
-          </span>
+          <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ShowBizy</span>
         </Link>
         <div className="flex items-center gap-6 text-sm">
-          <Link href="/projects" className="text-white/50 hover:text-white transition">Browse Projects</Link>
           <Link href="/dashboard" className="text-white font-medium">Dashboard</Link>
-          <div className="relative">
-            <span className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-sm cursor-pointer">
-              {USER.avatar}
-            </span>
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#030712]" />
+          <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
+          <button onClick={handleSignOut} className="text-white/50 hover:text-white transition">Sign out</button>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-lg">
+            {userAvatar}
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back, {USER.name.split(' ')[0]} 👋</h1>
-            <p className="text-white/50 mt-1">You have {NOTIFICATIONS.filter(n => n.unread).length} new notifications</p>
-          </div>
-          <Link href="/projects" className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition">
-            Browse all projects →
-          </Link>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-1">Welcome back, {user.name.split(' ')[0]} 👋</h1>
+          <p className="text-white/40">Here&apos;s what&apos;s happening with your creative projects</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main content */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Matched Projects */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">🎯 Matched for you</h2>
-                <Link href="/projects" className="text-sm text-purple-400 hover:text-purple-300 transition">View all →</Link>
+                <h2 className="text-xl font-bold">Matched Projects</h2>
+                <Link href="/projects" className="text-purple-400 text-sm hover:text-purple-300 transition">View all →</Link>
               </div>
-              <div className="space-y-4">
-                {matchedProjects.map((project) => (
-                  <Link
-                    key={project.id}
-                    href={`/projects/${project.id}`}
-                    className="block bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 hover:bg-white/[0.05] hover:border-purple-500/20 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span>{project.streamIcon}</span>
-                          <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">{project.stream}</span>
-                          <span className="text-xs text-white/30">•</span>
-                          <span className="text-xs text-white/40">{project.location}</span>
+              {matchedProjects.length > 0 ? (
+                <div className="grid gap-4">
+                  {matchedProjects.map((project) => (
+                    <Link key={project.id} href={`/projects/${project.id}`} className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] hover:border-purple-500/30 transition group">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold text-lg group-hover:text-purple-400 transition">{project.title}</h3>
+                          <p className="text-white/40 text-sm">{project.stream} • {project.location}</p>
                         </div>
-                        <h3 className="text-lg font-bold mb-1">{project.title}</h3>
-                        <p className="text-sm text-white/50 line-clamp-1 mb-3">{project.description}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {project.roles.filter(r => !r.filled).slice(0, 4).map((r, i) => (
-                            <span key={i} className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
-                              {r.role}
-                            </span>
-                          ))}
+                        <span className="text-2xl">{streamEmojis[project.stream] || '🎬'}</span>
+                      </div>
+                      <p className="text-white/50 text-sm mb-3 line-clamp-2">{project.description}</p>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                          <span className="text-xs text-white/40">{project.teamSize - project.roles.filter((r: { filled: boolean }) => r.filled).length} spots left</span>
                         </div>
+                        <span className="text-xs text-white/30">{project.timeline}</span>
                       </div>
-                      <div className="text-right ml-4 shrink-0">
-                        <div className="text-sm font-bold text-white/60">{project.filledRoles}/{project.teamSize}</div>
-                        <div className="text-xs text-white/30">team</div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                  <p className="text-white/40">No matches yet. Our AI is scanning your area for projects.</p>
+                  <p className="text-white/30 text-sm mt-2">First matches usually arrive within 48 hours.</p>
+                </div>
+              )}
             </section>
 
             {/* Active Projects */}
             <section>
-              <h2 className="text-xl font-bold mb-4">🚀 Your active projects</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {activeProjects.map((project) => (
-                  <Link
-                    key={project.id}
-                    href={`/projects/${project.id}`}
-                    className="bg-gradient-to-br from-purple-600/5 to-pink-600/5 border border-purple-500/10 rounded-2xl p-5 hover:border-purple-500/30 transition-all"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span>{project.streamIcon}</span>
-                      <span className="text-xs font-bold text-purple-400">{project.stream}</span>
-                    </div>
-                    <h3 className="font-bold mb-2">{project.title}</h3>
-                    {/* Milestone progress */}
-                    <div className="space-y-1.5 mb-3">
-                      {project.milestones.map((m, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            m.status === 'completed' ? 'bg-green-400' :
-                            m.status === 'active' ? 'bg-purple-400 animate-pulse' :
-                            'bg-white/20'
-                          }`} />
-                          <span className={`text-xs ${m.status === 'active' ? 'text-white/80' : 'text-white/40'}`}>
-                            {m.name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-xs text-white/30">{project.timeline} • {project.location}</div>
-                  </Link>
-                ))}
+              <h2 className="text-xl font-bold mb-4">Active Projects</h2>
+              <div className="grid gap-4">
+                {activeProjects.map((project) => {
+                  const milestones = ['Pre-production', 'Production', 'Post-production', 'Published']
+                  const currentMilestone = 1
+                  return (
+                    <Link key={project.id} href={`/projects/${project.id}`} className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] transition">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold">{project.title}</h3>
+                        <span className="text-xs text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full">{milestones[currentMilestone]}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {milestones.map((_, i) => (
+                          <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= currentMilestone ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/10'}`} />
+                        ))}
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </section>
 
-            {/* Stream Feed */}
+            {/* Feed */}
             <section>
-              <h2 className="text-xl font-bold mb-4">📡 Your stream feed</h2>
+              <h2 className="text-xl font-bold mb-4">Your Feed</h2>
               <div className="space-y-3">
                 {FEED_ITEMS.map((item) => (
-                  <div key={item.id} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex gap-3">
-                    <span className="text-2xl shrink-0">{item.avatar}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{item.user}</span>
-                        {item.type === 'system' && (
-                          <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full">AI</span>
-                        )}
-                        <span className="text-xs text-white/30">{item.time}</span>
-                      </div>
-                      <p className="text-sm text-white/60">{item.content}</p>
+                  <div key={item.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-start gap-3">
+                    <span className="text-2xl">{item.avatar}</span>
+                    <div className="flex-1">
+                      <p className="text-sm"><span className="font-semibold text-purple-400">{item.user}</span>{' '}<span className="text-white/60">{item.content}</span></p>
+                      <p className="text-xs text-white/30 mt-1">{item.time}</p>
                     </div>
                   </div>
                 ))}
@@ -175,77 +183,73 @@ export default function DashboardPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Profile Overview */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+            {/* Profile Card */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-4">
-                <span className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-2xl">
-                  {USER.avatar}
-                </span>
+                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-2xl">
+                  {userAvatar}
+                </div>
                 <div>
-                  <h3 className="font-bold">{USER.name}</h3>
-                  <p className="text-sm text-white/40">{USER.city} • Since {USER.memberSince}</p>
+                  <h3 className="font-bold text-lg">{user.name}</h3>
+                  <p className="text-white/40 text-sm">{user.city || 'Location not set'}</p>
                 </div>
               </div>
-              <div className="space-y-2 mb-4">
-                <div className="flex flex-wrap gap-1">
-                  {USER.streams.map(s => (
-                    <span key={s} className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full">{s}</span>
-                  ))}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-white/50">
+                  <span>Streams</span>
+                  <span className="text-white">{user.streams?.length || 0}</span>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {USER.skills.map(s => (
-                    <span key={s} className="text-xs bg-white/5 text-white/50 px-2 py-0.5 rounded-full">{s}</span>
-                  ))}
+                <div className="flex justify-between text-white/50">
+                  <span>Skills</span>
+                  <span className="text-white">{user.skills?.length || 0}</span>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="bg-white/[0.03] rounded-xl p-3">
-                  <p className="text-2xl font-bold text-purple-400">{USER.projectsActive}</p>
-                  <p className="text-xs text-white/40">Active</p>
+                <div className="flex justify-between text-white/50">
+                  <span>Member since</span>
+                  <span className="text-white">{memberSince}</span>
                 </div>
-                <div className="bg-white/[0.03] rounded-xl p-3">
-                  <p className="text-2xl font-bold text-green-400">{USER.projectsCompleted}</p>
-                  <p className="text-xs text-white/40">Completed</p>
+                <div className="flex justify-between text-white/50">
+                  <span>Availability</span>
+                  <span className="text-white capitalize">{user.availability || 'Full-time'}</span>
                 </div>
               </div>
+              {user.streams && user.streams.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <p className="text-xs text-white/40 mb-2">Streams</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.streams.map((s) => (
+                      <span key={s} className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full text-xs">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {user.skills && user.skills.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-white/40 mb-2">Skills</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.skills.map((s) => (
+                      <span key={s} className="bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full text-xs">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Notifications */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <h3 className="font-bold mb-4 flex items-center gap-2">
-                🔔 Notifications
-                <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
-                  {NOTIFICATIONS.filter(n => n.unread).length} new
-                </span>
+                Notifications
+                <span className="bg-purple-600 text-xs px-2 py-0.5 rounded-full">{NOTIFICATIONS.filter(n => n.unread).length}</span>
               </h3>
               <div className="space-y-3">
-                {NOTIFICATIONS.map((notif) => (
-                  <div key={notif.id} className={`p-3 rounded-lg text-sm cursor-pointer transition-colors ${
-                    notif.unread ? 'bg-purple-500/5 border border-purple-500/10' : 'hover:bg-white/[0.03]'
-                  }`}>
-                    <p className={notif.unread ? 'text-white/80' : 'text-white/50'}>{notif.message}</p>
-                    <p className="text-xs text-white/30 mt-1">{notif.time}</p>
+                {NOTIFICATIONS.map((n) => (
+                  <div key={n.id} className={`text-sm flex items-start gap-2 ${n.unread ? 'text-white/70' : 'text-white/40'}`}>
+                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.unread ? 'bg-purple-400' : 'bg-white/20'}`} />
+                    <div>
+                      <p className="leading-snug">{n.message}</p>
+                      <p className="text-xs text-white/30 mt-0.5">{n.time}</p>
+                    </div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
-              <h3 className="font-bold mb-4">⚡ Quick actions</h3>
-              <div className="space-y-2">
-                <Link href="/projects" className="block w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm">
-                  🔍 Browse projects
-                </Link>
-                <button className="block w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm">
-                  ✏️ Edit profile
-                </button>
-                <button className="block w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm">
-                  📤 Share portfolio
-                </button>
-                <button className="block w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm">
-                  🎲 Surprise me (random project)
-                </button>
               </div>
             </div>
           </div>

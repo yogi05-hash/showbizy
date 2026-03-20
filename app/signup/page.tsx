@@ -64,7 +64,7 @@ export default function SignupPage() {
     try {
       const streamNames = selectedStreams.map(s => s.name)
       
-      await fetch('/api/signup', {
+      const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,6 +72,22 @@ export default function SignupPage() {
           streams: streamNames,
         }),
       })
+
+      const data = await res.json()
+
+      // Store user data for session persistence
+      const userData = {
+        id: data.user?.id || '',
+        name: formData.name,
+        email: formData.email,
+        streams: streamNames,
+        skills: formData.skills,
+        city: formData.city,
+        availability: formData.availability,
+        portfolio: formData.portfolio,
+        created_at: new Date().toISOString(),
+      }
+      localStorage.setItem('showbizy_user', JSON.stringify(userData))
 
       const params = new URLSearchParams({
         name: formData.name,
