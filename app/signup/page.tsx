@@ -51,10 +51,10 @@ export default function SignupPage() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return formData.name && formData.email && formData.password.length >= 6
+      case 1: return formData.name.trim().length > 0 && formData.email.trim().length > 0 && formData.email.includes('@') && formData.password.length >= 6
       case 2: return formData.streams.length > 0
       case 3: return formData.skills.length > 0
-      case 4: return formData.city.length > 0
+      case 4: return formData.city.trim().length > 0
       default: return false
     }
   }
@@ -176,6 +176,12 @@ export default function SignupPage() {
                     placeholder="At least 6 characters"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/30 focus:outline-none focus:border-purple-500 transition"
                   />
+                  {formData.password.length > 0 && formData.password.length < 6 && (
+                    <p className="text-xs text-orange-400 mt-1.5">Password must be at least 6 characters ({6 - formData.password.length} more needed)</p>
+                  )}
+                  {formData.password.length >= 6 && (
+                    <p className="text-xs text-green-400 mt-1.5">✓ Password looks good</p>
+                  )}
                 </div>
               </div>
             </div>
