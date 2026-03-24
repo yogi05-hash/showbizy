@@ -1,12 +1,82 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { STREAMS, MOCK_PROJECTS } from '@/lib/data'
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
+
+/* ─── DATA ─── */
+const FEATURED_PROJECTS = [
+  {
+    title: 'The Last Bookstore',
+    genre: 'Short Film',
+    subgenre: 'Drama',
+    location: 'London',
+    team: 4,
+    status: 'Casting Now',
+    statusColor: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
+    image: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600',
+    avatars: ['🎬', '📝', '🎭', '📷'],
+    timeline: 'Mar — Apr 2026',
+  },
+  {
+    title: 'Neon Nights',
+    genre: 'Music Video',
+    subgenre: 'Electronic / Visual',
+    location: 'Manchester',
+    team: 6,
+    status: 'In Production',
+    statusColor: 'bg-green-400/20 text-green-300 border-green-400/30',
+    image: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600',
+    avatars: ['🎵', '🎥', '💡', '🎨', '🎤', '📷'],
+    timeline: 'Feb — Mar 2026',
+  },
+  {
+    title: 'Street Canvas',
+    genre: 'Documentary',
+    subgenre: 'Urban Art',
+    location: 'Birmingham',
+    team: 3,
+    status: 'Post-Production',
+    statusColor: 'bg-purple-400/20 text-purple-300 border-purple-400/30',
+    image: 'https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?w=600',
+    avatars: ['🎬', '✂️', '🎵'],
+    timeline: 'Jan — Feb 2026',
+  },
+]
+
+const TESTIMONIALS = [
+  {
+    name: 'Priya Sharma',
+    role: 'Director',
+    city: 'London',
+    photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
+    quote: 'Signed up Monday, matched Tuesday, we started shooting by Saturday. This is how creative projects should work.',
+  },
+  {
+    name: 'Marcus Johnson',
+    role: 'Music Producer',
+    city: 'Manchester',
+    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+    quote: "I've been looking for a platform that actually connects creatives. ShowBizy matched me with a filmmaker who needed exactly my sound.",
+  },
+  {
+    name: 'Elena Torres',
+    role: 'Cinematographer',
+    city: 'Birmingham',
+    photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
+    quote: "The AI-generated briefs are surprisingly good. It's like having a creative producer who never sleeps.",
+  },
+]
 
 export default function Home() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const user = localStorage.getItem('showbizy_user')
+    if (user) setIsLoggedIn(true)
+  }, [])
 
   const handleWaitlist = (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,7 +88,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#030712] text-white overflow-hidden">
-      {/* NAV */}
+      {/* ─── NAV ─── */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🎬</span>
@@ -27,45 +97,56 @@ export default function Home() {
           </span>
         </div>
         <div className="hidden md:flex items-center gap-6 text-sm">
-          <Link href="#streams" className="text-white/50 hover:text-white transition">Streams</Link>
-          <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
+          <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>
+          <Link href="#creatives" className="text-white/50 hover:text-white transition">Creatives</Link>
           <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>
-          <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
-            Get early access
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <Link href="/dashboard" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Dashboard</Link>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold">
+                Y
+              </div>
+            </>
+          ) : (
+            <>
+              <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>
+              <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
+                Claim Your Spot
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
-      {/* HERO */}
+      {/* ─── HERO ─── */}
       <section className="relative max-w-7xl mx-auto px-6 pt-20 pb-28 text-center">
         {/* Background glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-purple-600/20 via-pink-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-1.5 mb-8">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-sm text-purple-300">Where creative projects are born</span>
+          {/* Urgency badge */}
+          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-5 py-2 mb-8 animate-pulse-slow">
+            <span>🔥</span>
+            <span className="text-sm font-semibold text-orange-300">London Launch — Only 200 spots remaining</span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 tracking-tight">
-            <span className="text-white">Don&apos;t find work.</span>
+            <span className="text-white">AI creates the project.</span>
             <br />
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent animate-gradient">
-              Let work find you.
+              You bring the talent.
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-            AI creates the project. You bring the talent. ShowBizy generates creative briefs 
-            and assembles local teams of creatives to bring them to life.
+            ShowBizy generates creative briefs and assembles local teams of film, music, and entertainment professionals to bring them to life.
           </p>
 
           {/* Waitlist form */}
-          <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-6">
+          <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-4">
             {!submitted ? (
               <>
                 <input
@@ -80,277 +161,333 @@ export default function Home() {
                   type="submit"
                   className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-purple-500/25 whitespace-nowrap"
                 >
-                  Join waitlist →
+                  Claim Your Spot →
                 </button>
               </>
             ) : (
               <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-6 py-4 text-green-400 font-medium">
-                🎉 You&apos;re on the list! We&apos;ll be in touch soon.
+                🎉 You&apos;re #2,848 in line! We&apos;ll notify you when it&apos;s your turn.
               </div>
             )}
           </form>
-          <p className="text-white/30 text-sm">Launching Q2 2026 • London & NYC first</p>
-        </div>
-
-        {/* Social proof stats */}
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto mt-20">
-          {[
-            { num: '2,847', label: 'Creatives waitlisted' },
-            { num: '156', label: 'AI projects generated' },
-            { num: '8', label: 'Creative streams' },
-            { num: '48h', label: 'Avg team formation' },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">{stat.num}</p>
-              <p className="text-sm text-white/40">{stat.label}</p>
-            </div>
-          ))}
+          <p className="text-white/40 text-sm">Join <span className="text-purple-400 font-semibold">2,847</span> creatives already waitlisted</p>
         </div>
       </section>
 
-      {/* 8 CREATIVE STREAMS */}
-      <section id="streams" className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">8 Creative Streams</span>
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Every kind of creative, one platform</h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">From filmmakers to fashion designers, musicians to muralists — ShowBizy generates projects across every creative discipline.</p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {STREAMS.map((stream) => (
-            <div
-              key={stream.id}
-              className="group relative bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.06] hover:border-purple-500/20 transition-all duration-300 cursor-pointer"
-            >
-              <span className="text-4xl mb-4 block">{stream.icon}</span>
-              <h3 className="text-lg font-bold mb-2">{stream.name}</h3>
-              <div className="flex flex-wrap gap-1">
-                {stream.roles.slice(0, 3).map((role) => (
-                  <span key={role} className="text-xs text-white/40 bg-white/5 px-2 py-0.5 rounded-full">{role}</span>
-                ))}
-                {stream.roles.length > 3 && (
-                  <span className="text-xs text-purple-400">+{stream.roles.length - 3} more</span>
-                )}
-              </div>
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stream.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" className="relative max-w-7xl mx-auto px-6 py-24">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10">
-          <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">How it works</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">AI creates. You collaborate.</h2>
-            <p className="text-white/50 text-lg max-w-xl mx-auto">Four steps from idea to finished project</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-6">
-            {[
-              {
-                step: '01',
-                title: 'AI Scans Talent',
-                desc: 'Our AI analyses creative profiles, skills, locations, and availability to understand who\'s ready to create.',
-                icon: '🔍',
-                gradient: 'from-blue-500/20 to-cyan-500/20',
-              },
-              {
-                step: '02',
-                title: 'Generates Projects',
-                desc: 'AI creates complete project briefs — scripts, mood boards, shot lists, timelines — tailored to available talent.',
-                icon: '✨',
-                gradient: 'from-purple-500/20 to-pink-500/20',
-              },
-              {
-                step: '03',
-                title: 'Matches Teams',
-                desc: 'The perfect crew is assembled based on skills, style, and location. Everyone gets a role that fits.',
-                icon: '🎯',
-                gradient: 'from-pink-500/20 to-rose-500/20',
-              },
-              {
-                step: '04',
-                title: 'They Create',
-                desc: 'Teams collaborate with built-in tools — chat, file sharing, milestones. Real projects, real credits, real portfolio pieces.',
-                icon: '🚀',
-                gradient: 'from-orange-500/20 to-amber-500/20',
-              },
-            ].map((item) => (
-              <div key={item.step} className={`relative bg-gradient-to-br ${item.gradient} border border-white/[0.06] rounded-2xl p-6`}>
-                <span className="text-xs font-mono font-bold text-white/30 mb-4 block">{item.step}</span>
-                <span className="text-3xl mb-3 block">{item.icon}</span>
-                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                <p className="text-white/50 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* EXAMPLE PROJECTS */}
+      {/* ─── FEATURED PROJECTS ─── */}
       <section id="projects" className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">AI-Generated Projects</span>
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">See what AI creates</h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">Real briefs generated by our AI — diverse projects across all 8 creative streams, ready for teams to execute.</p>
+          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Live Projects</span>
+          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Happening right now</h2>
+          <p className="text-white/50 text-lg max-w-xl mx-auto">Real creative projects with real teams. Every one started as an AI-generated brief.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {MOCK_PROJECTS.slice(0, 6).map((project) => (
-            <div key={project.id} className="group bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 hover:border-purple-500/20 transition-all duration-300">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">{project.streamIcon}</span>
-                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">{project.stream}</span>
-              </div>
-              <h3 className="text-xl font-bold mb-1">{project.title}</h3>
-              <p className="text-sm text-white/40 mb-3">{project.genre} • {project.location}</p>
-              <p className="text-white/50 text-sm mb-4 leading-relaxed line-clamp-3">{project.description}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap gap-1.5">
-                  {project.roles.filter(r => !r.filled).slice(0, 3).map((r, i) => (
-                    <span key={i} className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
-                      {r.role}
-                    </span>
-                  ))}
+          {FEATURED_PROJECTS.map((project) => (
+            <div
+              key={project.title}
+              className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-500 hover:-translate-y-1"
+            >
+              {/* Thumbnail */}
+              <div className="relative h-48 overflow-hidden">
+                <Image
+                  src={project.image}
+                  alt={project.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent" />
+                {/* Status badge */}
+                <div className={`absolute top-3 right-3 ${project.statusColor} border text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm`}>
+                  {project.status}
                 </div>
-                <span className="text-xs text-white/30">{project.filledRoles}/{project.teamSize} joined</span>
+                {/* Genre badge */}
+                <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-medium px-3 py-1 rounded-full">
+                  {project.genre}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-5">
+                <h3 className="text-xl font-bold mb-1">{project.title}</h3>
+                <p className="text-sm text-white/40 mb-4">{project.subgenre} • {project.location} • {project.timeline}</p>
+
+                {/* Team avatars */}
+                <div className="flex items-center justify-between">
+                  <div className="flex -space-x-2">
+                    {project.avatars.map((av, i) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-sm"
+                      >
+                        {av}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-xs text-white/30">{project.team} team members</span>
+                </div>
               </div>
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="text-center mt-10">
-          <Link href="/projects" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition">
-            Browse all projects →
+      {/* ─── HOW IT ACTUALLY WORKS ─── */}
+      <section id="how-it-works" className="relative max-w-7xl mx-auto px-6 py-24">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">How it actually works</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">From AI brief to real production</h2>
+            <p className="text-white/50 text-lg max-w-xl mx-auto">Four steps. No gatekeepers. No endless applications.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Step 1 — AI Brief */}
+            <div className="relative group">
+              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 01</div>
+              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-3">AI Generates a Brief</h3>
+                {/* Mock brief card */}
+                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
+                    <span className="text-purple-300 font-semibold">New Brief</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Mood</span>
+                    <span className="text-white/70">Nostalgic, Warm</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Genre</span>
+                    <span className="text-white/70">Short Film</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Location</span>
+                    <span className="text-white/70">East London</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/40">Roles</span>
+                    <span className="text-white/70">4 needed</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2 — Matched */}
+            <div className="relative group">
+              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 02</div>
+              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-3">You Get Matched</h3>
+                {/* Mock notification */}
+                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-sm">🔔</div>
+                    <div>
+                      <p className="text-white/80 font-semibold">New match!</p>
+                      <p className="text-white/40">Just now</p>
+                    </div>
+                  </div>
+                  <p className="text-white/60 leading-relaxed">&quot;Neon Nights&quot; needs a <span className="text-purple-300 font-medium">cinematographer</span> in Manchester</p>
+                  <button className="mt-3 w-full bg-purple-500/20 text-purple-300 py-2 rounded-lg text-xs font-semibold border border-purple-500/20">
+                    View Project →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3 — Team */}
+            <div className="relative group">
+              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 03</div>
+              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-3">Join Your Team</h3>
+                {/* Mock team formation */}
+                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
+                  <div className="flex justify-center -space-x-3 mb-3">
+                    {['🎬', '📷', '🎵', '✂️', '🎨'].map((emoji, i) => (
+                      <div
+                        key={i}
+                        className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-lg team-avatar-pop"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                      >
+                        {emoji}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-center text-xs text-white/50">Team assembled</p>
+                  <div className="flex justify-center gap-1 mt-2">
+                    {['Director', 'DOP', 'Sound', 'Editor', 'Art'].map((role) => (
+                      <span key={role} className="text-[10px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded-full">{role}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4 — Create */}
+            <div className="relative group">
+              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 04</div>
+              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-3">Create Something Real</h3>
+                {/* Mock premiere */}
+                <div className="bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06]">
+                  <div className="h-20 bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center">
+                    <span className="text-3xl">🎬</span>
+                  </div>
+                  <div className="p-3 text-xs">
+                    <p className="font-semibold text-white/80">Premiere Night</p>
+                    <p className="text-white/40 mt-1">Real project. Real credits. Real portfolio.</p>
+                    <div className="flex gap-1 mt-2">
+                      <span className="bg-green-400/20 text-green-300 px-2 py-0.5 rounded-full text-[10px] font-medium">✓ Completed</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── AI LIVE SECTION ─── */}
+      <section className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center mb-12">
+          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">AI in Action</span>
+          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Watch the AI create</h2>
+        </div>
+
+        <div className="max-w-2xl mx-auto">
+          <div className="relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 md:p-8 hover:border-purple-500/20 transition-all duration-300">
+            {/* Live indicator */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span className="text-sm font-semibold text-red-400">LIVE</span>
+              </div>
+              <span className="text-xs text-white/30">Generated 2 minutes ago</span>
+            </div>
+
+            {/* Generated brief */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Echoes of Brick Lane</h3>
+                <p className="text-white/40 text-sm mt-1">AI-Generated Creative Brief #1,247</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
+                  <span className="text-white/40 text-xs block mb-1">Genre</span>
+                  <span className="text-white/80 font-medium">Short Documentary</span>
+                </div>
+                <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
+                  <span className="text-white/40 text-xs block mb-1">Mood / Tone</span>
+                  <span className="text-white/80 font-medium">Intimate, Raw, Poetic</span>
+                </div>
+                <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
+                  <span className="text-white/40 text-xs block mb-1">Location</span>
+                  <span className="text-white/80 font-medium">East London, UK</span>
+                </div>
+                <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
+                  <span className="text-white/40 text-xs block mb-1">Team Size</span>
+                  <span className="text-white/80 font-medium">5 creatives</span>
+                </div>
+                <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
+                  <span className="text-white/40 text-xs block mb-1">Visual Style</span>
+                  <span className="text-white/80 font-medium">Handheld, Natural Light</span>
+                </div>
+                <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
+                  <span className="text-white/40 text-xs block mb-1">Key Roles</span>
+                  <span className="text-white/80 font-medium">Director, DOP, Editor, Sound, Narrator</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Glow effect */}
+            <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-purple-500/10 via-transparent to-pink-500/10 pointer-events-none" />
+          </div>
+
+          <p className="text-center text-white/40 text-sm mt-6">
+            Our AI generates fresh creative projects every day, matched to talent in your area.
+          </p>
+        </div>
+      </section>
+
+      {/* ─── TESTIMONIALS ─── */}
+      <section id="creatives" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center mb-16">
+          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">From the Community</span>
+          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives who shipped</h2>
+          <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real results.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t) => (
+            <div
+              key={t.name}
+              className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-transparent transition-all duration-500 testimonial-card"
+            >
+              {/* Gradient border on hover */}
+              <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none" />
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/10">
+                    <Image
+                      src={t.photo}
+                      alt={t.name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold">{t.name}</p>
+                    <p className="text-sm text-white/40">{t.role} • {t.city}</p>
+                  </div>
+                </div>
+                <p className="text-white/60 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── PRICING TEASER ─── */}
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <div className="text-center">
+          <p className="text-white/40 text-lg mb-4">Plans starting from <span className="text-white font-bold">£0/month</span></p>
+          <Link href="/pricing" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition text-lg">
+            View pricing plans →
           </Link>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Pricing</span>
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Plans for every creative</h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">From solo creatives to global brands</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Free */}
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-7">
-            <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-2">Free</h3>
-            <p className="text-4xl font-bold mb-1">£0</p>
-            <p className="text-sm text-white/30 mb-6">Forever free</p>
-            <ul className="space-y-3 mb-8">
-              {['Browse all projects', 'Basic profile', 'Join 1 project/month', 'Community access'].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-white/60">
-                  <span className="text-green-400 mt-0.5">✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup" className="block text-center border border-white/10 py-3 rounded-xl font-semibold text-sm hover:bg-white/5 transition">
-              Start free
-            </Link>
-          </div>
-
-          {/* Pro */}
-          <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/30 rounded-2xl p-7 glow-purple">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-xs font-bold px-3 py-1 rounded-full">
-              POPULAR
-            </span>
-            <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">Pro</h3>
-            <p className="text-4xl font-bold mb-1">£19<span className="text-lg text-white/40">/mo</span></p>
-            <p className="text-sm text-white/30 mb-6">For active creatives</p>
-            <ul className="space-y-3 mb-8">
-              {[
-                'Unlimited projects',
-                'Priority team matching',
-                'Portfolio hosting',
-                'Collaboration tools',
-                'Credit generation',
-                'Community voting',
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-white/80">
-                  <span className="text-purple-400 mt-0.5">✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup" className="block text-center bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition">
-              Get Pro
-            </Link>
-          </div>
-
-          {/* Brand Brief */}
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-7">
-            <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-2">Brand Brief</h3>
-            <p className="text-4xl font-bold mb-1">£149<span className="text-lg text-white/40">-999</span></p>
-            <p className="text-sm text-white/30 mb-6">Per project</p>
-            <ul className="space-y-3 mb-8">
-              {[
-                'Custom AI brief',
-                'Curated team matching',
-                'Project management',
-                'Dedicated support',
-                'Commercial licensing',
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-white/60">
-                  <span className="text-green-400 mt-0.5">✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup" className="block text-center border border-white/10 py-3 rounded-xl font-semibold text-sm hover:bg-white/5 transition">
-              Submit brief
-            </Link>
-          </div>
-
-          {/* Brand Sub */}
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-7">
-            <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-2">Brand Sub</h3>
-            <p className="text-4xl font-bold mb-1">£499<span className="text-lg text-white/40">/mo</span></p>
-            <p className="text-sm text-white/30 mb-6">Unlimited content</p>
-            <ul className="space-y-3 mb-8">
-              {[
-                'Unlimited briefs',
-                'Priority talent pool',
-                'Brand guidelines AI',
-                'Analytics dashboard',
-                'API access',
-                'Account manager',
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-white/60">
-                  <span className="text-green-400 mt-0.5">✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup" className="block text-center border border-white/10 py-3 rounded-xl font-semibold text-sm hover:bg-white/5 transition">
-              Contact sales
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
+      {/* ─── FINAL CTA ─── */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center">
         <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20 rounded-3xl p-12 overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 mb-6">
+              <span>🔥</span>
+              <span className="text-sm font-semibold text-orange-300">Only 200 spots for London launch</span>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Your next project is waiting</h2>
             <p className="text-white/50 text-lg mb-8 max-w-xl mx-auto">
-              Join 2,847 creatives already on the waitlist. Be first to access AI-generated projects when we launch.
+              Join <span className="text-purple-400 font-semibold">2,847</span> creatives already on the waitlist. Be first to access AI-generated projects when we launch.
             </p>
             <Link href="/signup" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg shadow-purple-500/25">
-              Get early access →
+              Claim Your Spot →
             </Link>
-            <p className="text-white/30 text-sm mt-4">Launching Q2 2026 • London & NYC first</p>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* ─── FOOTER ─── */}
       <footer className="border-t border-white/[0.06] py-10 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">

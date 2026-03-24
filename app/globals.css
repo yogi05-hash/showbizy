@@ -84,3 +84,29 @@ html {
   border: 2px solid currentColor;
   animation: pulse-ring 2s ease-out infinite;
 }
+
+/* Slow pulse for urgency badge */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Team avatar pop-in */
+@keyframes avatar-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.team-avatar-pop {
+  animation: avatar-pop 0.4s ease-out both;
+}
+
+/* Testimonial card gradient border glow */
+.testimonial-card:hover {
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.1), 0 0 60px rgba(236, 72, 153, 0.05);
+}
