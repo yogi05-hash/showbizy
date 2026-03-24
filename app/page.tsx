@@ -643,9 +643,9 @@ export default function Home() {
             © 2026 ShowBizy.ai — AI creates the project. You bring the talent.
           </p>
           <div className="flex gap-6 text-sm">
-            <Link href="/about" className="text-white/40 hover:text-white transition">About</Link>
-            <Link href="/contact" className="text-white/40 hover:text-white transition">Contact</Link>
-            <Link href="https://twitter.com/showbizyai" className="text-white/40 hover:text-white transition">Twitter</Link>
+            <Link href="/pricing" className="text-white/40 hover:text-white transition">Pricing</Link>
+            <Link href="/projects" className="text-white/40 hover:text-white transition">Projects</Link>
+            <Link href="mailto:hello@bilabs.ai" className="text-white/40 hover:text-white transition">Contact</Link>
           </div>
         </div>
       </footer>
