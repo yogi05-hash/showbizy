@@ -30,7 +30,7 @@ export default function Home() {
           <Link href="#streams" className="text-white/50 hover:text-white transition">Streams</Link>
           <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
-          <Link href="#pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
+          <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>

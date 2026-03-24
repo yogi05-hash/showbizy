@@ -88,6 +88,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-6 text-sm">
           <Link href="/dashboard" className="text-white font-medium">Dashboard</Link>
           <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
+          <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
           <button onClick={handleSignOut} className="text-white/50 hover:text-white transition">Sign out</button>
           <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-lg overflow-hidden">
             {user.avatar ? (
@@ -188,6 +189,25 @@ export default function DashboardPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Upgrade to Pro CTA */}
+            {!(user as UserData & { is_pro?: boolean }).is_pro && (
+              <Link
+                href="/pricing"
+                className="block bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 hover:border-purple-500/50 transition group"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">⚡</span>
+                  <h3 className="font-bold text-lg">Upgrade to Pro</h3>
+                </div>
+                <p className="text-white/50 text-sm mb-3">
+                  Unlock unlimited applications, priority matching, and more.
+                </p>
+                <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg text-sm font-semibold group-hover:opacity-90 transition">
+                  £19/month →
+                </span>
+              </Link>
+            )}
+
             {/* Profile Card */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-4">
@@ -199,7 +219,14 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">{user.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg">{user.name}</h3>
+                    {(user as UserData & { is_pro?: boolean }).is_pro && (
+                      <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Pro
+                      </span>
+                    )}
+                  </div>
                   <p className="text-white/40 text-sm">{user.city || 'Location not set'}</p>
                   <Link href="/profile/edit" className="text-xs text-purple-400 hover:text-purple-300 transition">
                     Edit profile →
