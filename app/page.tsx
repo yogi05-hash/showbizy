@@ -68,10 +68,37 @@ const TESTIMONIALS = [
   },
 ]
 
+const FAQ_ITEMS = [
+  {
+    q: 'Is it really free?',
+    a: 'Yes! Create your profile, browse AI-generated projects, and get matched — completely free. Pro members get unlimited applications, priority matching, and a featured profile for £19/month.',
+  },
+  {
+    q: 'How does AI generate projects?',
+    a: 'Our AI analyzes trending genres, local talent pools, and creative gaps in your city. It generates project briefs with mood boards, role requirements, and production timelines — then matches the right creatives to each role.',
+  },
+  {
+    q: 'What cities are you in?',
+    a: "We're launching in London first (Q2 2026), with Manchester and Birmingham next. Join the waitlist to bring ShowBizy to your city.",
+  },
+]
+
+const TICKER_ITEMS = [
+  '🎬 Priya just joined from London',
+  "🎯 Marcus matched to 'Neon Nights'",
+  "🎵 New project generated: 'Vinyl Dreams' in Manchester",
+  "📸 Elena's profile featured this week",
+  "🎭 'The Last Bookstore' team is now full",
+  '🔥 47 new creatives joined today',
+  "🎬 'Street Canvas' entered post-production",
+  '🎯 New match: Cinematographer needed in Birmingham',
+]
+
 export default function Home() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
@@ -88,6 +115,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#030712] text-white overflow-hidden">
+      <style jsx>{`
+        @keyframes ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .ticker-track {
+          animation: ticker-scroll 40s linear infinite;
+        }
+        .phone-mockup-wrapper {
+          display: flex;
+          justify-content: center;
+        }
+        @media (max-width: 1023px) {
+          .phone-mockup-wrapper {
+            margin-top: 2rem;
+          }
+        }
+      `}</style>
       {/* ─── NAV ─── */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
         <div className="flex items-center gap-2">
@@ -174,6 +219,17 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── ACTIVITY TICKER ─── */}
+      <div className="relative border-t border-b border-white/5 bg-white/[0.02] overflow-hidden py-3">
+        <div className="ticker-track flex whitespace-nowrap">
+          {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+            <span key={i} className="inline-block px-8 text-sm text-white/40">
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* ─── FEATURED PROJECTS ─── */}
       <section id="projects" className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
@@ -244,103 +300,153 @@ export default function Home() {
             <p className="text-white/50 text-lg max-w-xl mx-auto">Four steps. No gatekeepers. No endless applications.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Step 1 — AI Brief */}
-            <div className="relative group">
-              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 01</div>
-              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-3">AI Generates a Brief</h3>
-                {/* Mock brief card */}
-                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
-                    <span className="text-purple-300 font-semibold">New Brief</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Mood</span>
-                    <span className="text-white/70">Nostalgic, Warm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Genre</span>
-                    <span className="text-white/70">Short Film</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Location</span>
-                    <span className="text-white/70">East London</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Roles</span>
-                    <span className="text-white/70">4 needed</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2 — Matched */}
-            <div className="relative group">
-              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 02</div>
-              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-3">You Get Matched</h3>
-                {/* Mock notification */}
-                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-sm">🔔</div>
-                    <div>
-                      <p className="text-white/80 font-semibold">New match!</p>
-                      <p className="text-white/40">Just now</p>
+          <div className="flex flex-col lg:flex-row gap-12 items-center">
+            {/* Steps */}
+            <div className="grid md:grid-cols-2 gap-6 flex-1">
+              {/* Step 1 — AI Brief */}
+              <div className="relative group">
+                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 01</div>
+                <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                  <h3 className="text-lg font-bold mb-3">AI Generates a Brief</h3>
+                  <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
+                      <span className="text-purple-300 font-semibold">New Brief</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/40">Mood</span>
+                      <span className="text-white/70">Nostalgic, Warm</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/40">Genre</span>
+                      <span className="text-white/70">Short Film</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/40">Location</span>
+                      <span className="text-white/70">East London</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/40">Roles</span>
+                      <span className="text-white/70">4 needed</span>
                     </div>
                   </div>
-                  <p className="text-white/60 leading-relaxed">&quot;Neon Nights&quot; needs a <span className="text-purple-300 font-medium">cinematographer</span> in Manchester</p>
-                  <button className="mt-3 w-full bg-purple-500/20 text-purple-300 py-2 rounded-lg text-xs font-semibold border border-purple-500/20">
-                    View Project →
-                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Step 3 — Team */}
-            <div className="relative group">
-              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 03</div>
-              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-3">Join Your Team</h3>
-                {/* Mock team formation */}
-                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
-                  <div className="flex justify-center -space-x-3 mb-3">
-                    {['🎬', '📷', '🎵', '✂️', '🎨'].map((emoji, i) => (
-                      <div
-                        key={i}
-                        className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-lg team-avatar-pop"
-                        style={{ animationDelay: `${i * 0.15}s` }}
-                      >
-                        {emoji}
+              {/* Step 2 — Matched */}
+              <div className="relative group">
+                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 02</div>
+                <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                  <h3 className="text-lg font-bold mb-3">You Get Matched</h3>
+                  <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-sm">🔔</div>
+                      <div>
+                        <p className="text-white/80 font-semibold">New match!</p>
+                        <p className="text-white/40">Just now</p>
                       </div>
-                    ))}
+                    </div>
+                    <p className="text-white/60 leading-relaxed">&quot;Neon Nights&quot; needs a <span className="text-purple-300 font-medium">cinematographer</span> in Manchester</p>
+                    <button className="mt-3 w-full bg-purple-500/20 text-purple-300 py-2 rounded-lg text-xs font-semibold border border-purple-500/20">
+                      View Project →
+                    </button>
                   </div>
-                  <p className="text-center text-xs text-white/50">Team assembled</p>
-                  <div className="flex justify-center gap-1 mt-2">
-                    {['Director', 'DOP', 'Sound', 'Editor', 'Art'].map((role) => (
-                      <span key={role} className="text-[10px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded-full">{role}</span>
-                    ))}
+                </div>
+              </div>
+
+              {/* Step 3 — Team */}
+              <div className="relative group">
+                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 03</div>
+                <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                  <h3 className="text-lg font-bold mb-3">Join Your Team</h3>
+                  <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
+                    <div className="flex justify-center -space-x-3 mb-3">
+                      {['🎬', '📷', '🎵', '✂️', '🎨'].map((emoji, i) => (
+                        <div
+                          key={i}
+                          className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-lg team-avatar-pop"
+                          style={{ animationDelay: `${i * 0.15}s` }}
+                        >
+                          {emoji}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-center text-xs text-white/50">Team assembled</p>
+                    <div className="flex justify-center gap-1 mt-2">
+                      {['Director', 'DOP', 'Sound', 'Editor', 'Art'].map((role) => (
+                        <span key={role} className="text-[10px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded-full">{role}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4 — Create */}
+              <div className="relative group">
+                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 04</div>
+                <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
+                  <h3 className="text-lg font-bold mb-3">Create Something Real</h3>
+                  <div className="bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06]">
+                    <div className="h-20 bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center">
+                      <span className="text-3xl">🎬</span>
+                    </div>
+                    <div className="p-3 text-xs">
+                      <p className="font-semibold text-white/80">Premiere Night</p>
+                      <p className="text-white/40 mt-1">Real project. Real credits. Real portfolio.</p>
+                      <div className="flex gap-1 mt-2">
+                        <span className="bg-green-400/20 text-green-300 px-2 py-0.5 rounded-full text-[10px] font-medium">✓ Completed</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 4 — Create */}
-            <div className="relative group">
-              <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 04</div>
-              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-3">Create Something Real</h3>
-                {/* Mock premiere */}
-                <div className="bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06]">
-                  <div className="h-20 bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center">
-                    <span className="text-3xl">🎬</span>
+            {/* ─── PHONE MOCKUP ─── */}
+            <div className="flex-shrink-0 phone-mockup-wrapper">
+              <div
+                className="relative w-[280px] h-[560px] bg-[#1a1a2e] rounded-[2.5rem] border-2 border-white/10 shadow-2xl shadow-purple-500/10 overflow-hidden"
+                style={{ transform: 'perspective(1200px) rotateY(-5deg)', transformStyle: 'preserve-3d' }}
+              >
+                {/* Notch */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#0d0d1a] rounded-b-2xl z-20" />
+
+                {/* Screen */}
+                <div className="absolute inset-2 rounded-[2rem] bg-gradient-to-b from-[#0d0d1a] to-[#12122a] overflow-hidden">
+                  {/* Status bar */}
+                  <div className="flex items-center justify-between px-6 pt-3 pb-1 text-[10px] text-white/50">
+                    <span className="font-semibold">9:41</span>
+                    <div className="flex items-center gap-1">
+                      <span>▂▄▆█</span>
+                      <span>WiFi</span>
+                      <span>🔋</span>
+                    </div>
                   </div>
-                  <div className="p-3 text-xs">
-                    <p className="font-semibold text-white/80">Premiere Night</p>
-                    <p className="text-white/40 mt-1">Real project. Real credits. Real portfolio.</p>
-                    <div className="flex gap-1 mt-2">
-                      <span className="bg-green-400/20 text-green-300 px-2 py-0.5 rounded-full text-[10px] font-medium">✓ Completed</span>
+
+                  {/* Push notification */}
+                  <div className="mx-3 mt-12 bg-white/[0.08] backdrop-blur-xl rounded-2xl p-3.5 border border-white/[0.1] shadow-lg">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-base">🎬</span>
+                      <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">ShowBizy</span>
+                      <span className="ml-auto text-[9px] text-white/30">2m ago</span>
+                    </div>
+                    <p className="text-xs font-bold text-white/90 mb-1">New Match! 🎯</p>
+                    <p className="text-[11px] text-white/50 leading-relaxed">
+                      You&apos;ve been matched to &apos;Neon Nights&apos; — a music video shooting in Manchester this weekend. Tap to view.
+                    </p>
+                  </div>
+
+                  {/* Faded home screen effect */}
+                  <div className="mt-6 px-4 space-y-3 opacity-20">
+                    <div className="grid grid-cols-4 gap-3">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="w-10 h-10 rounded-xl bg-white/10" />
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="w-10 h-10 rounded-xl bg-white/10" />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -484,6 +590,46 @@ export default function Home() {
               Claim Your Spot →
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* ─── FAQ ─── */}
+      <section className="max-w-3xl mx-auto px-6 py-24">
+        <div className="text-center mb-16">
+          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">FAQ</span>
+          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Got questions?</h2>
+        </div>
+        <div className="space-y-4">
+          {FAQ_ITEMS.map((item, i) => (
+            <div
+              key={i}
+              className={`bg-white/[0.03] border rounded-2xl transition-all duration-300 overflow-hidden ${
+                openFaq === i ? 'border-purple-500/40' : 'border-white/[0.06]'
+              }`}
+            >
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full flex items-center justify-between px-6 py-5 text-left"
+              >
+                <span className={`font-semibold text-lg transition-colors ${openFaq === i ? 'text-purple-400' : 'text-white/80'}`}>
+                  {item.q}
+                </span>
+                <span
+                  className={`text-white/40 text-xl transition-transform duration-300 ${openFaq === i ? 'rotate-45' : ''}`}
+                >
+                  +
+                </span>
+              </button>
+              <div
+                className="grid transition-all duration-300 ease-in-out"
+                style={{ gridTemplateRows: openFaq === i ? '1fr' : '0fr' }}
+              >
+                <div className="overflow-hidden">
+                  <p className="px-6 pb-5 text-white/50 leading-relaxed">{item.a}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
