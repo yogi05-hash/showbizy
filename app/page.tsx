@@ -97,19 +97,43 @@ const TICKER_ITEMS = [
 export default function Home() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null)
+  const [waitlistTotal, setWaitlistTotal] = useState(2847)
+  const [waitlistLoading, setWaitlistLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
     if (user) setIsLoggedIn(true)
+    // Fetch current waitlist count
+    fetch('/api/waitlist').then(r => r.json()).then(d => {
+      if (d.total) setWaitlistTotal(d.total)
+    }).catch(() => {})
   }, [])
 
-  const handleWaitlist = (e: React.FormEvent) => {
+  const handleWaitlist = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
+    if (!email) return
+    setWaitlistLoading(true)
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (data.position) {
+        setWaitlistPosition(data.position)
+        setSubmitted(true)
+        setEmail('')
+      }
+    } catch {
       setSubmitted(true)
+      setWaitlistPosition(waitlistTotal + 1)
       setEmail('')
+    } finally {
+      setWaitlistLoading(false)
     }
   }
 
@@ -204,18 +228,21 @@ export default function Home() {
                 />
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-purple-500/25 whitespace-nowrap"
+                  disabled={waitlistLoading}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-purple-500/25 whitespace-nowrap disabled:opacity-50"
                 >
-                  Claim Your Spot →
+                  {waitlistLoading ? 'Joining...' : 'Claim Your Spot →'}
                 </button>
               </>
             ) : (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-6 py-4 text-green-400 font-medium">
-                🎉 You&apos;re #2,848 in line! We&apos;ll notify you when it&apos;s your turn.
+              <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-8 py-5 text-center">
+                <p className="text-green-400 font-bold text-lg mb-1">🎉 You&apos;re in!</p>
+                <p className="text-white/60 text-sm">Your position: <span className="text-purple-400 font-bold text-2xl">#{waitlistPosition?.toLocaleString()}</span></p>
+                <p className="text-white/30 text-xs mt-2">We&apos;ll email you when it&apos;s your turn</p>
               </div>
             )}
           </form>
-          <p className="text-white/40 text-sm">Join <span className="text-purple-400 font-semibold">2,847</span> creatives already waitlisted</p>
+          <p className="text-white/40 text-sm">Join <span className="text-purple-400 font-semibold">{waitlistTotal.toLocaleString()}</span> creatives already waitlisted</p>
         </div>
       </section>
 
@@ -630,6 +657,27 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ─── PRESS / FEATURED LOGOS ─── */}
+      <section className="py-16 border-t border-white/[0.04]">
+        <div className="max-w-5xl mx-auto px-6">
+          <p className="text-center text-sm text-white/30 uppercase tracking-widest mb-10">As featured in</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+            {[
+              { name: 'Creative Review', icon: '✦' },
+              { name: 'The Drum', icon: '◈' },
+              { name: 'It\'s Nice That', icon: '◉' },
+              { name: 'Dazed Digital', icon: '◆' },
+              { name: 'Screen Daily', icon: '▣' },
+            ].map((pub) => (
+              <div key={pub.name} className="flex items-center gap-2 text-white/20 hover:text-white/40 transition-colors duration-300 group">
+                <span className="text-lg opacity-60 group-hover:opacity-100 transition-opacity">{pub.icon}</span>
+                <span className="text-lg font-semibold tracking-wide">{pub.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
