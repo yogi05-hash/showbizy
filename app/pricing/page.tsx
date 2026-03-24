@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const FREE_FEATURES = [
   'Create your profile',
@@ -19,9 +19,39 @@ const PRO_FEATURES = [
   'Weekly project digest email',
 ]
 
+interface UserData {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+  is_pro?: boolean
+}
+
 export default function PricingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [user, setUser] = useState<UserData | null>(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('showbizy_user')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setUser(parsed)
+        // Re-fetch fresh data to get current is_pro status
+        fetch(`/api/user?email=${encodeURIComponent(parsed.email)}`)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data?.user) {
+              const fresh = { ...parsed, ...data.user }
+              localStorage.setItem('showbizy_user', JSON.stringify(fresh))
+              setUser(fresh)
+            }
+          })
+          .catch(() => { /* use cached data */ })
+      } catch { /* no valid user data */ }
+    }
+  }, [])
 
   const handleUpgrade = async () => {
     setLoading(true)
@@ -77,10 +107,25 @@ export default function PricingPage() {
           <Link href="/" className="text-white/50 hover:text-white transition">Home</Link>
           <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <Link href="/pricing" className="text-white font-medium">Pricing</Link>
-          <Link href="/signin" className="text-white/60 hover:text-white transition">Sign in</Link>
-          <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
-            Get started
-          </Link>
+          {user ? (
+            <>
+              <Link href="/dashboard" className="text-white/60 hover:text-white transition">Dashboard</Link>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-lg overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-bold">{user.name?.charAt(0)?.toUpperCase() || '?'}</span>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <Link href="/signin" className="text-white/60 hover:text-white transition">Sign in</Link>
+              <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -148,20 +193,26 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={handleUpgrade}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                    Loading...
-                  </span>
-                ) : (
-                  'Upgrade to Pro'
-                )}
-              </button>
+              {user?.is_pro ? (
+                <div className="w-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 py-3.5 rounded-xl font-semibold text-sm text-center text-purple-300">
+                  You&apos;re on Pro ✨
+                </div>
+              ) : (
+                <button
+                  onClick={handleUpgrade}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                      Loading...
+                    </span>
+                  ) : (
+                    'Upgrade to Pro'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

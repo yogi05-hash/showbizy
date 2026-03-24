@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendProUpgradeEmail } from '@/lib/email'
 import Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +57,28 @@ export async function POST(req: NextRequest) {
 
             if (error) {
               console.error('Supabase update error:', error)
+            } else {
+              // Send Pro upgrade confirmation email
+              try {
+                const { data: userData } = await supabaseAdmin
+                  .from('showbizy_users')
+                  .select('name, email')
+                  .eq('id', userId)
+                  .single()
+
+                if (userData) {
+                  const amountPaid = session.amount_total
+                    ? `£${(session.amount_total / 100).toFixed(2)}`
+                    : '£19/month'
+                  await sendProUpgradeEmail(
+                    { name: userData.name, email: userData.email },
+                    amountPaid
+                  )
+                }
+              } catch (emailErr) {
+                console.error('[webhook] Failed to send Pro upgrade email:', emailErr)
+                // Don't fail the webhook if email fails
+              }
             }
           } catch (dbError) {
             console.error('Database error during pro upgrade:', dbError)

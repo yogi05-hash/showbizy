@@ -11,7 +11,7 @@ export const transporter = nodemailer.createTransport({
   },
 })
 
-const BASE_URL = 'https://showbizy.vercel.app'
+const BASE_URL = 'https://showbizy.ai'
 const FROM = '"ShowBizy" <hello@bilabs.ai>'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -157,12 +157,18 @@ export async function sendWelcomeEmail(user: EmailUser): Promise<void> {
     ${ctaButton('Go to Dashboard →', `${BASE_URL}/dashboard`)}
   `
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `🎬 Welcome to ShowBizy, ${user.name}!`,
-    html: wrapEmail(`Welcome to ShowBizy!`, body),
-  })
+  try {
+    await transporter.sendMail({
+      from: FROM,
+      to: user.email,
+      subject: `🎬 Welcome to ShowBizy, ${user.name}!`,
+      html: wrapEmail(`Welcome to ShowBizy!`, body),
+    })
+    console.log(`[email] Welcome email sent to ${user.email}`)
+  } catch (err) {
+    console.error(`[email] Failed to send welcome email to ${user.email}:`, err)
+    throw err
+  }
 }
 
 // ─── 2. Project Matched ────────────────────────────────────────────────────
@@ -404,4 +410,61 @@ export async function sendWeeklyDigestEmail(user: EmailUser, stats: WeeklyStats)
     subject: `📊 Your ShowBizy week: ${stats.matchCount} new matches`,
     html: wrapEmail(`Your Weekly Digest`, body),
   })
+}
+
+// ─── 8. Pro Upgrade Confirmation ───────────────────────────────────────────
+export async function sendProUpgradeEmail(
+  user: { name: string; email: string },
+  amountPaid?: string
+): Promise<void> {
+  const amount = amountPaid || '£19/month'
+
+  const benefitsHtml = [
+    'Unlimited project applications',
+    'Priority AI matching',
+    'Featured profile badge ✨',
+    'Direct messaging with creators',
+    'Weekly curated project digest',
+    'Early access to new features',
+  ].map(b =>
+    `<tr><td style="padding:6px 0;color:#e5e7eb;font-size:14px;">
+      <span style="color:#a855f7;margin-right:8px;">✓</span>${b}
+    </td></tr>`
+  ).join('')
+
+  const body = `
+    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 🎉</p>
+    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Welcome to <strong style="color:#a855f7;">ShowBizy Pro</strong>! Your upgrade is confirmed and all Pro features are now unlocked.
+    </p>
+    ${card('Your Pro Benefits', `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        ${benefitsHtml}
+      </table>
+    `)}
+    ${card('Payment Receipt', `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        ${infoRow('Plan', 'ShowBizy Pro')}
+        ${infoRow('Amount', `<strong style="color:#e5e7eb;">${amount}</strong>`)}
+        ${infoRow('Status', '<span style="color:#22c55e;">✓ Confirmed</span>')}
+      </table>
+    `)}
+    <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 24px;">
+      You can manage your subscription anytime from your dashboard settings. Cancel anytime — no questions asked.
+    </p>
+    ${ctaButton('Go to Dashboard →', `${BASE_URL}/dashboard`)}
+  `
+
+  try {
+    await transporter.sendMail({
+      from: FROM,
+      to: user.email,
+      subject: `⚡ You're now a ShowBizy Pro member!`,
+      html: wrapEmail(`You're ShowBizy Pro! 🎉`, body),
+    })
+    console.log(`[email] Pro upgrade email sent to ${user.email}`)
+  } catch (err) {
+    console.error(`[email] Failed to send Pro upgrade email to ${user.email}:`, err)
+    throw err
+  }
 }

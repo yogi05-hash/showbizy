@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { MOCK_PROJECTS } from '@/lib/data'
 
 interface UserData {
@@ -16,6 +16,7 @@ interface UserData {
   availability: string
   portfolio: string
   created_at: string
+  is_pro?: boolean
 }
 
 const NOTIFICATIONS = [
@@ -29,24 +30,72 @@ const FEED_ITEMS = [
   { id: '2', user: 'ShowBizy AI', avatar: '🤖', content: 'Tip: Add a portfolio link to your profile to get 3x more project matches.', time: '3h ago', type: 'system' },
 ]
 
-export default function DashboardPage() {
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+      </div>
+    }>
+      <DashboardPage />
+    </Suspense>
+  )
+}
+
+function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('showbizy_user')
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored))
-      } catch {
-        router.push('/signin')
-      }
-    } else {
+    if (!stored) {
       router.push('/signin')
+      return
     }
-    setLoading(false)
-  }, [router])
+
+    let parsed: UserData
+    try {
+      parsed = JSON.parse(stored)
+    } catch {
+      router.push('/signin')
+      return
+    }
+
+    // Show upgrade banner if redirected from Stripe
+    if (searchParams.get('upgraded') === 'true') {
+      setShowUpgradeBanner(true)
+    }
+
+    // Always re-fetch fresh user data from the database
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`/api/user?email=${encodeURIComponent(parsed.email)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.user) {
+            // Merge with any local-only fields (like avatar from OAuth)
+            const freshUser = { ...parsed, ...data.user }
+            localStorage.setItem('showbizy_user', JSON.stringify(freshUser))
+            setUser(freshUser)
+          } else {
+            setUser(parsed)
+          }
+        } else {
+          // API failed, fall back to localStorage
+          setUser(parsed)
+        }
+      } catch {
+        // Network error, fall back to localStorage
+        setUser(parsed)
+      }
+      setLoading(false)
+    }
+
+    fetchUser()
+  }, [router, searchParams])
 
   if (loading || !user) {
     return (
@@ -101,6 +150,25 @@ export default function DashboardPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Upgrade Success Banner */}
+        {showUpgradeBanner && (
+          <div className="mb-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🎉</span>
+              <div>
+                <h3 className="font-bold text-lg">Welcome to ShowBizy Pro!</h3>
+                <p className="text-white/60 text-sm">All Pro features are now unlocked. Time to create something amazing.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowUpgradeBanner(false)}
+              className="text-white/40 hover:text-white transition text-xl px-2"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-1">Welcome back, {user.name.split(' ')[0]} 👋</h1>
@@ -190,7 +258,7 @@ export default function DashboardPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Upgrade to Pro CTA */}
-            {!(user as UserData & { is_pro?: boolean }).is_pro && (
+            {!user.is_pro && (
               <Link
                 href="/pricing"
                 className="block bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 hover:border-purple-500/50 transition group"
@@ -221,7 +289,7 @@ export default function DashboardPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-lg">{user.name}</h3>
-                    {(user as UserData & { is_pro?: boolean }).is_pro && (
+                    {user.is_pro && (
                       <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                         Pro
                       </span>
