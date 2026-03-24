@@ -38,7 +38,7 @@ const FEATURED_PROJECTS = [
     team: 3,
     status: 'Post-Production',
     statusColor: 'bg-purple-400/20 text-purple-300 border-purple-400/30',
-    image: 'https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?w=600',
+    image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600',
     avatars: ['🎬', '✂️', '🎵'],
     timeline: 'Jan — Feb 2026',
   },
