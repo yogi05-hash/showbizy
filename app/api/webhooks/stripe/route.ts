@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
           // Try to update is_pro column - handle gracefully if column doesn't exist
           try {
             const { error } = await supabaseAdmin
-              .from('users')
+              .from('showbizy_users')
               .update({
                 is_pro: true,
                 stripe_customer_id: session.customer as string,
@@ -55,15 +55,7 @@ export async function POST(req: NextRequest) {
               .eq('id', userId)
 
             if (error) {
-              console.error('Supabase update error (checkout.session.completed):', error)
-              // If column doesn't exist, try with just is_pro
-              if (error.message?.includes('column')) {
-                console.warn('Some columns may not exist yet. Trying minimal update...')
-                await supabaseAdmin
-                  .from('users')
-                  .update({ is_pro: true })
-                  .eq('id', userId)
-              }
+              console.error('Supabase update error:', error)
             }
           } catch (dbError) {
             console.error('Database error during pro upgrade:', dbError)
@@ -79,7 +71,7 @@ export async function POST(req: NextRequest) {
         try {
           // Find user by stripe_customer_id and downgrade
           const { data: users, error: findError } = await supabaseAdmin
-            .from('users')
+            .from('showbizy_users')
             .select('id')
             .eq('stripe_customer_id', customerId)
             .limit(1)
@@ -92,7 +84,7 @@ export async function POST(req: NextRequest) {
 
           if (users && users.length > 0) {
             const { error } = await supabaseAdmin
-              .from('users')
+              .from('showbizy_users')
               .update({ is_pro: false })
               .eq('id', users[0].id)
 
