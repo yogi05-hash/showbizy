@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import Stripe from 'stripe'
+
+export const dynamic = 'force-dynamic'
 
 // TODO: Add STRIPE_WEBHOOK_SECRET to your .env.local
 // Get it from Stripe Dashboard → Developers → Webhooks → Add endpoint
@@ -25,10 +26,11 @@ export async function POST(req: NextRequest) {
     let event: Stripe.Event
 
     try {
-      event = stripe.webhooks.constructEvent(
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion })
+      event = stripeClient.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET
+        process.env.STRIPE_WEBHOOK_SECRET!
       )
     } catch (err) {
       console.error('Webhook signature verification failed:', err)

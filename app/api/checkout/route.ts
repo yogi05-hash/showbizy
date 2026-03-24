@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +33,10 @@ export async function POST(req: NextRequest) {
     // TODO: Add STRIPE_PRICE_ID to your .env.local
     // Create it in Stripe Dashboard → Products → Add Product
     // Product: "ShowBizy Pro", Price: £19/month recurring
-    const session = await stripe.checkout.sessions.create({
+    const Stripe = (await import('stripe')).default
+    const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-12-18.acacia' as import('stripe').Stripe.LatestApiVersion })
+
+    const session = await stripeClient.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       customer_email: email,
