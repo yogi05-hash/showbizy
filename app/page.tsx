@@ -79,7 +79,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What cities are you in?',
-    a: "We're launching in London first (Q2 2026), with Manchester and Birmingham next. Join the waitlist to bring ShowBizy to your city.",
+    a: "We're live in London now, with Manchester and Birmingham rolling out next. Sign up to get notified when we expand to your city.",
   },
 ]
 
@@ -95,47 +95,13 @@ const TICKER_ITEMS = [
 ]
 
 export default function Home() {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null)
-  const [waitlistTotal, setWaitlistTotal] = useState(2847)
-  const [waitlistLoading, setWaitlistLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
     if (user) setIsLoggedIn(true)
-    // Fetch current waitlist count
-    fetch('/api/waitlist').then(r => r.json()).then(d => {
-      if (d.total) setWaitlistTotal(d.total)
-    }).catch(() => {})
   }, [])
-
-  const handleWaitlist = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-    setWaitlistLoading(true)
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      const data = await res.json()
-      if (data.position) {
-        setWaitlistPosition(data.position)
-        setSubmitted(true)
-        setEmail('')
-      }
-    } catch {
-      setSubmitted(true)
-      setWaitlistPosition(waitlistTotal + 1)
-      setEmail('')
-    } finally {
-      setWaitlistLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#030712] text-white overflow-hidden">
@@ -183,7 +149,7 @@ export default function Home() {
             <>
               <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>
               <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
-                Claim Your Spot
+                Get Started Free
               </Link>
             </>
           )}
@@ -196,10 +162,10 @@ export default function Home() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-purple-600/20 via-pink-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          {/* Urgency badge */}
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-5 py-2 mb-8 animate-pulse-slow">
+          {/* Live badge */}
+          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-5 py-2 mb-8">
             <span>🔥</span>
-            <span className="text-sm font-semibold text-orange-300">London Launch — Only 200 spots remaining</span>
+            <span className="text-sm font-semibold text-green-300">Now Live in London</span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 tracking-tight">
@@ -214,35 +180,21 @@ export default function Home() {
             ShowBizy generates creative briefs and assembles local teams of film, music, and entertainment professionals to bring them to life.
           </p>
 
-          {/* Waitlist form */}
-          <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-4">
-            {!submitted ? (
-              <>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/30 focus:outline-none focus:border-purple-500 transition"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={waitlistLoading}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-purple-500/25 whitespace-nowrap disabled:opacity-50"
-                >
-                  {waitlistLoading ? 'Joining...' : 'Claim Your Spot →'}
-                </button>
-              </>
-            ) : (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-8 py-5 text-center">
-                <p className="text-green-400 font-bold text-lg mb-1">🎉 You&apos;re in!</p>
-                <p className="text-white/60 text-sm">Your position: <span className="text-purple-400 font-bold text-2xl">#{waitlistPosition?.toLocaleString()}</span></p>
-                <p className="text-white/30 text-xs mt-2">We&apos;ll email you when it&apos;s your turn</p>
-              </div>
-            )}
-          </form>
-          <p className="text-white/40 text-sm">Join <span className="text-purple-400 font-semibold">{waitlistTotal.toLocaleString()}</span> creatives already waitlisted</p>
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+            <Link
+              href="/signup"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-purple-500/25 whitespace-nowrap text-center"
+            >
+              Get Started Free →
+            </Link>
+            <Link
+              href="/pricing"
+              className="bg-white/5 border border-white/10 px-8 py-3.5 rounded-xl font-bold hover:bg-white/10 transition whitespace-nowrap text-center"
+            >
+              See Pricing
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -599,23 +551,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── FINAL CTA ─── */}
+      {/* ─── JOIN NOW CTA ─── */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center">
         <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20 rounded-3xl p-12 overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 mb-6">
-              <span>🔥</span>
-              <span className="text-sm font-semibold text-orange-300">Only 200 spots for London launch</span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Your next project is waiting</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Ready to create something amazing?</h2>
             <p className="text-white/50 text-lg mb-8 max-w-xl mx-auto">
-              Join <span className="text-purple-400 font-semibold">2,847</span> creatives already on the waitlist. Be first to access AI-generated projects when we launch.
+              Join thousands of creatives already on ShowBizy. Get matched to real projects in your city.
             </p>
             <Link href="/signup" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg shadow-purple-500/25">
-              Claim Your Spot →
+              Create Your Free Profile →
             </Link>
+            <p className="text-white/40 text-sm mt-4">
+              Pro features from <Link href="/pricing" className="text-purple-400 hover:text-purple-300 font-semibold transition">£19/month</Link>
+            </p>
           </div>
         </div>
       </section>
