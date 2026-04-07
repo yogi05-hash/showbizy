@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!process.env.STRIPE_PRICE_ID) {
+    if (!(process.env.STRIPE_PRICE_ID || '').trim()) {
       return NextResponse.json(
         { error: 'Stripe price not configured yet. Add STRIPE_PRICE_ID to your environment variables.' },
         { status: 503 }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       },
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID,
+          price: (process.env.STRIPE_PRICE_ID || '').trim(),
           quantity: 1,
         },
       ],
