@@ -6,6 +6,45 @@ import Image from 'next/image'
 import { detectLocation, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 import { FadeIn, StaggerContainer, StaggerItem, TiltCard, AnimatedCounter } from '@/components/MotionWrap'
 import { motion } from 'motion/react'
+import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+
+const InfiniteGallery = dynamic(() => import('@/components/ui/3d-gallery-photography'), { ssr: false })
+
+const HERO_IMAGES = [
+  { src: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600', alt: 'Film clapperboard' },
+  { src: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600', alt: 'Music studio' },
+  { src: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600', alt: 'Street art' },
+  { src: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600', alt: 'Theatre stage' },
+  { src: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600', alt: 'Concert crowd' },
+  { src: 'https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?w=600', alt: 'Dancer' },
+  { src: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600', alt: 'Cinema screen' },
+  { src: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600', alt: 'Guitar music' },
+  { src: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600', alt: 'Camera filming' },
+  { src: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600', alt: 'Live performance' },
+]
+
+function HeroGallery() {
+  return (
+    <Suspense fallback={null}>
+      <InfiniteGallery
+        images={HERO_IMAGES}
+        speed={0.6}
+        visibleCount={10}
+        className="h-full w-full"
+        fadeSettings={{
+          fadeIn: { start: 0.05, end: 0.2 },
+          fadeOut: { start: 0.45, end: 0.5 },
+        }}
+        blurSettings={{
+          blurIn: { start: 0.0, end: 0.15 },
+          blurOut: { start: 0.4, end: 0.5 },
+          maxBlur: 6.0,
+        }}
+      />
+    </Suspense>
+  )
+}
 
 /* ─── DATA ─── */
 const getFeaturedProjects = (cities: string[]) => [
@@ -293,15 +332,22 @@ export default function Home() {
 
       {/* ─── HERO ─── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* 3D Gallery Background */}
+        <div className="absolute inset-0 opacity-30 pointer-events-auto">
+          <HeroGallery />
+        </div>
+        {/* Dark overlay to keep text readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030712]/40 via-[#030712]/60 to-[#030712] pointer-events-none z-[1]" />
+
         {/* Animated rotating spotlight beams */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
           <div className="hero-spotlight-1 absolute top-[-30%] left-[20%] w-[200px] h-[140vh] bg-gradient-to-b from-amber-400/[0.07] via-amber-400/[0.02] to-transparent origin-top" />
           <div className="hero-spotlight-2 absolute top-[-30%] right-[25%] w-[180px] h-[130vh] bg-gradient-to-b from-purple-400/[0.05] via-purple-400/[0.015] to-transparent origin-top" />
           <div className="hero-spotlight-3 absolute top-[-30%] left-[50%] w-[250px] h-[150vh] bg-gradient-to-b from-white/[0.03] via-white/[0.01] to-transparent origin-top" />
         </div>
 
         {/* Radial glow behind text */}
-        <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.08] rounded-full blur-[150px] pointer-events-none" />
+        <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.08] rounded-full blur-[150px] pointer-events-none z-[2]" />
 
         {/* Floating project poster cards in background */}
         <div className="absolute inset-0 pointer-events-none hidden lg:block">
@@ -345,7 +391,7 @@ export default function Home() {
         {/* Film grain overlay */}
         <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundSize: '128px' }} />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-32 text-center">
+        <div className="relative z-[5] max-w-5xl mx-auto px-6 pt-28 pb-32 text-center">
           {/* Live badge */}
           <div className="hero-fade-in inline-flex items-center gap-2.5 bg-white/[0.04] border border-white/[0.08] rounded-full px-5 py-2.5 mb-10 backdrop-blur-md">
             <span className="relative flex h-2 w-2">
