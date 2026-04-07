@@ -125,6 +125,7 @@ export default function Home() {
   })
   const [cities, setCities] = useState(['London', 'Manchester', 'Birmingham'])
   const [featuredJobs, setFeaturedJobs] = useState<{id:string;title:string;company:string;location:string;salary:string;category:string;type:string;posted:string}[]>([])
+  const [liveProjects, setLiveProjects] = useState<{id:string;title:string;stream:string;streamIcon:string;genre:string;location:string;timeline:string;description:string;teamSize:number;filledRoles:number;status:string;roles:{role:string;filled:boolean}[]}[]>([])
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
@@ -136,6 +137,12 @@ export default function Home() {
     
     const detectedCities = getCitiesForLocation(detectedLocation)
     setCities(detectedCities)
+
+    // Fetch live projects from database
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(d => { if (d.projects?.length) setLiveProjects(d.projects.slice(0, 3)) })
+      .catch(() => {})
 
     // Fetch featured jobs from API
     fetch('/api/jobs')
@@ -260,12 +267,75 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {getFeaturedProjects(cities).map((project) => (
+          {(liveProjects.length > 0 ? liveProjects.map((project) => {
+            const statusStyles: Record<string, string> = {
+              recruiting: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
+              in_production: 'bg-green-400/20 text-green-300 border-green-400/30',
+              post_production: 'bg-purple-400/20 text-purple-300 border-purple-400/30',
+              completed: 'bg-blue-400/20 text-blue-300 border-blue-400/30',
+            }
+            const statusLabels: Record<string, string> = {
+              recruiting: 'Casting Now',
+              in_production: 'In Production',
+              post_production: 'Post-Production',
+              completed: 'Completed',
+            }
+            const streamImages: Record<string, string> = {
+              'Film & Video': 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600',
+              'Music': 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600',
+              'Fashion & Modelling': 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=600',
+              'Visual Arts': 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600',
+              'Performing Arts': 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600',
+              'Events & Live': 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600',
+              'Influencer & Content': 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600',
+              'Brands & Businesses': 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600',
+            }
+            const roleEmojis: Record<string, string> = {
+              Director: '🎬', Cinematographer: '📷', Editor: '✂️', Sound: '🎵',
+              Producer: '📋', Writer: '📝', Actor: '🎭', Art: '🎨',
+            }
+
+            return (
+              <Link href={`/projects/${project.id}`} key={project.id}>
+                <div className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-500 hover:-translate-y-1">
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={streamImages[project.stream] || 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600'}
+                      alt={project.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-700"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent" />
+                    <div className={`absolute top-3 right-3 ${statusStyles[project.status] || statusStyles.recruiting} border text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm`}>
+                      {statusLabels[project.status] || project.status}
+                    </div>
+                    <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-medium px-3 py-1 rounded-full">
+                      {project.stream}
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold mb-1">{project.title}</h3>
+                    <p className="text-sm text-white/40 mb-4">{project.genre} • {project.location} • {project.timeline}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex -space-x-2">
+                        {project.roles?.slice(0, 5).map((r, i) => (
+                          <div key={i} className="w-8 h-8 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-sm">
+                            {roleEmojis[r.role] || '👤'}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-xs text-white/30">{project.filledRoles}/{project.teamSize} joined</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )
+          }) : getFeaturedProjects(cities).map((project) => (
             <div
               key={project.title}
               className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-500 hover:-translate-y-1"
             >
-              {/* Thumbnail */}
               <div className="relative h-48 overflow-hidden">
                 <Image
                   src={project.image}
@@ -275,38 +345,27 @@ export default function Home() {
                   unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent" />
-                {/* Status badge */}
                 <div className={`absolute top-3 right-3 ${project.statusColor} border text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm`}>
                   {project.status}
                 </div>
-                {/* Genre badge */}
                 <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-medium px-3 py-1 rounded-full">
                   {project.genre}
                 </div>
               </div>
-
-              {/* Content */}
               <div className="p-5">
                 <h3 className="text-xl font-bold mb-1">{project.title}</h3>
                 <p className="text-sm text-white/40 mb-4">{project.subgenre} • {project.location} • {project.timeline}</p>
-
-                {/* Team avatars */}
                 <div className="flex items-center justify-between">
                   <div className="flex -space-x-2">
                     {project.avatars.map((av, i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-sm"
-                      >
-                        {av}
-                      </div>
+                      <div key={i} className="w-8 h-8 rounded-full bg-white/10 border-2 border-[#030712] flex items-center justify-center text-sm">{av}</div>
                     ))}
                   </div>
                   <span className="text-xs text-white/30">{project.team} team members</span>
                 </div>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </section>
 
