@@ -297,13 +297,18 @@ export default function JobsPage() {
                   {/* Share button */}
                   <div className="flex gap-3 mb-4">
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const shareUrl = `${window.location.origin}/jobs/${selectedJob.id}`
-                        if (navigator.share) {
-                          navigator.share({ title: `${selectedJob.title} at ${selectedJob.company}`, text: `Check out this role on ShowBizy: ${selectedJob.title} at ${selectedJob.company}`, url: shareUrl })
-                        } else {
-                          navigator.clipboard.writeText(shareUrl)
-                          alert('Link copied to clipboard!')
+                        try {
+                          if (navigator.share) {
+                            await navigator.share({ title: `${selectedJob.title} at ${selectedJob.company}`, url: shareUrl })
+                          } else {
+                            await navigator.clipboard.writeText(shareUrl)
+                            alert('Link copied: ' + shareUrl)
+                          }
+                        } catch {
+                          // Fallback: prompt user to copy
+                          prompt('Copy this link:', shareUrl)
                         }
                       }}
                       className="flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
