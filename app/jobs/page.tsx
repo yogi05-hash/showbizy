@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { JOB_CATEGORIES, JOB_LOCATIONS, type Job } from '@/lib/jobs-data'
 
 export default function JobsPage() {
-  const [user, setUser] = useState<{ id: string; name: string; email: string; is_pro: boolean } | null>(null)
+  const [user, setUser] = useState<{ id: string; name: string; email: string; is_pro: boolean; skills?: string[]; streams?: string[]; city?: string; portfolio?: string } | null>(null)
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
   const [category, setCategory] = useState('All')
@@ -14,9 +14,11 @@ export default function JobsPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [showApply, setShowApply] = useState(false)
   const [coverNote, setCoverNote] = useState('')
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [appliedJobs, setAppliedJobs] = useState<string[]>([])
+  const [applyError, setApplyError] = useState('')
 
   // Fetch jobs from API
   useEffect(() => {
@@ -64,6 +66,22 @@ export default function JobsPage() {
 
   const handleApply = async () => {
     if (!user || !selectedJob) return
+    setApplyError('')
+
+    // Validation
+    if (!coverNote.trim() || coverNote.trim().length < 50) {
+      setApplyError('Cover letter is required (minimum 50 characters). Tell them why you\'re the right fit.')
+      return
+    }
+    if (!resumeFile) {
+      setApplyError('Please upload your resume/CV (PDF or DOC).')
+      return
+    }
+    if (!user.skills?.length && !user.streams?.length) {
+      setApplyError('Please complete your profile with skills before applying. Go to your dashboard to update.')
+      return
+    }
+
     setApplying(true)
     try {
       const res = await fetch('/api/jobs/apply', {
@@ -76,13 +94,19 @@ export default function JobsPage() {
           company: selectedJob.company,
           location: selectedJob.location,
           cover_note: coverNote,
+          resume_name: resumeFile.name,
         }),
       })
+      const data = await res.json()
       if (res.ok) {
         setApplied(true)
         setAppliedJobs(prev => [...prev, selectedJob.id])
+      } else {
+        setApplyError(data.error || 'Failed to submit application.')
       }
-    } catch {}
+    } catch {
+      setApplyError('Something went wrong. Please try again.')
+    }
     setApplying(false)
   }
 
@@ -299,27 +323,115 @@ export default function JobsPage() {
                   <h3 className="text-lg font-bold mb-1">Apply to {selectedJob.title}</h3>
                   <p className="text-white/40 text-sm mb-5">at {selectedJob.company}</p>
 
-                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 mb-5 text-sm text-white/60">
-                    Your ShowBizy profile (name, skills, portfolio) will be sent as your application.
+                  {/* Your Profile Summary */}
+                  <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4 mb-5">
+                    <h4 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Your Profile</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-white/40">Name</span>
+                        <span className="text-white/80 font-medium">{user?.name || 'Not set'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/40">Email</span>
+                        <span className="text-white/80">{user?.email || 'Not set'}</span>
+                      </div>
+                      {user?.city && (
+                        <div className="flex justify-between">
+                          <span className="text-white/40">Location</span>
+                          <span className="text-white/80">{user.city}</span>
+                        </div>
+                      )}
+                      {user?.skills && user.skills.length > 0 && (
+                        <div>
+                          <span className="text-white/40 text-xs">Skills</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {user.skills.slice(0, 6).map(s => (
+                              <span key={s} className="text-[10px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full">{s}</span>
+                            ))}
+                            {user.skills.length > 6 && <span className="text-[10px] text-white/30">+{user.skills.length - 6} more</span>}
+                          </div>
+                        </div>
+                      )}
+                      {user?.portfolio && (
+                        <div className="flex justify-between">
+                          <span className="text-white/40">Portfolio</span>
+                          <span className="text-purple-400 text-xs truncate max-w-[200px]">{user.portfolio}</span>
+                        </div>
+                      )}
+                    </div>
+                    {(!user?.skills?.length && !user?.streams?.length) && (
+                      <p className="text-amber-400 text-xs mt-3">⚠️ Complete your profile with skills for a stronger application. <Link href="/dashboard" className="underline">Update profile</Link></p>
+                    )}
                   </div>
 
-                  <div className="mb-5">
-                    <label className="block text-sm font-medium text-white/60 mb-2">Cover Note (optional)</label>
+                  {/* Cover Letter (required) */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-white/60 mb-2">Cover Letter <span className="text-red-400">*</span></label>
                     <textarea
                       value={coverNote}
                       onChange={e => setCoverNote(e.target.value)}
-                      placeholder="Tell them why you're perfect for this role..."
-                      rows={4}
+                      placeholder="Why are you the right fit for this role? What relevant experience do you bring? (minimum 50 characters)"
+                      rows={5}
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/40 resize-none transition"
                     />
+                    <div className="flex justify-between mt-1">
+                      <span className={`text-[10px] ${coverNote.trim().length >= 50 ? 'text-green-400' : 'text-white/20'}`}>
+                        {coverNote.trim().length >= 50 ? '✓ Good length' : `${coverNote.trim().length}/50 min characters`}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Resume Upload (required) */}
+                  <div className="mb-5">
+                    <label className="block text-sm font-medium text-white/60 mb-2">Resume / CV <span className="text-red-400">*</span></label>
+                    {resumeFile ? (
+                      <div className="flex items-center justify-between bg-green-400/10 border border-green-400/20 rounded-xl px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-400">📄</span>
+                          <span className="text-sm text-green-300 truncate max-w-[200px]">{resumeFile.name}</span>
+                          <span className="text-[10px] text-green-400/60">{(resumeFile.size / 1024).toFixed(0)}KB</span>
+                        </div>
+                        <button onClick={() => setResumeFile(null)} className="text-white/30 hover:text-white/60 text-xs">Remove</button>
+                      </div>
+                    ) : (
+                      <label className="block cursor-pointer">
+                        <div className="border-2 border-dashed border-white/[0.08] rounded-xl px-4 py-4 text-center hover:border-purple-500/30 transition">
+                          <span className="text-white/30 text-sm">📎 Click to upload PDF or DOC</span>
+                          <p className="text-[10px] text-white/15 mt-1">Max 5MB</p>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={e => {
+                            const f = e.target.files?.[0]
+                            if (f) {
+                              if (f.size > 5 * 1024 * 1024) {
+                                setApplyError('File too large. Maximum 5MB.')
+                                return
+                              }
+                              setResumeFile(f)
+                              setApplyError('')
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Error */}
+                  {applyError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4 text-sm text-red-400">
+                      {applyError}
+                    </div>
+                  )}
+
                   <div className="flex gap-3">
-                    <button onClick={() => setShowApply(false)} className="flex-1 bg-white/[0.05] border border-white/[0.08] py-3 rounded-xl text-sm font-medium hover:bg-white/[0.08] transition">
+                    <button onClick={() => { setShowApply(false); setApplyError(''); setResumeFile(null) }} className="flex-1 bg-white/[0.05] border border-white/[0.08] py-3 rounded-xl text-sm font-medium hover:bg-white/[0.08] transition">
                       Cancel
                     </button>
                     <button onClick={handleApply} disabled={applying} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-40">
-                      {applying ? 'Sending...' : 'Submit Application'}
+                      {applying ? 'Submitting...' : 'Submit Application'}
                     </button>
                   </div>
                 </>
