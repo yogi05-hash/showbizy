@@ -239,26 +239,47 @@ export default function Home() {
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-20 pb-28 text-center">
-        {/* Background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-purple-600/20 via-pink-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+        {/* Cinematic background layers */}
+        {/* Spotlight from top */}
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[800px] bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+        {/* Side accent lights */}
+        <div className="absolute top-1/3 left-[-5%] w-[300px] h-[500px] bg-gradient-to-r from-purple-600/10 to-transparent rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute top-1/4 right-[-5%] w-[300px] h-[500px] bg-gradient-to-l from-pink-600/8 to-transparent rounded-full blur-[80px] pointer-events-none" />
+        {/* Film grain overlay */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")', backgroundSize: '128px' }} />
 
-        <div className="relative z-10">
+        {/* Floating cinematic elements */}
+        <div className="absolute top-[15%] left-[8%] text-4xl opacity-10 animate-pulse" style={{ animationDuration: '4s' }}>🎬</div>
+        <div className="absolute top-[25%] right-[12%] text-3xl opacity-8 animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }}>🎵</div>
+        <div className="absolute bottom-[25%] left-[15%] text-3xl opacity-8 animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }}>📷</div>
+        <div className="absolute bottom-[20%] right-[8%] text-4xl opacity-10 animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '0.5s' }}>🎭</div>
+        <div className="absolute top-[60%] left-[5%] text-2xl opacity-5 animate-pulse" style={{ animationDuration: '7s', animationDelay: '3s' }}>✂️</div>
+        <div className="absolute top-[10%] right-[25%] text-2xl opacity-5 animate-pulse" style={{ animationDuration: '5.5s', animationDelay: '1.5s' }}>🎤</div>
+
+        {/* Horizontal film strip lines */}
+        <div className="absolute top-[20%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent pointer-events-none" />
+        <div className="absolute bottom-[25%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/8 to-transparent pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-28 text-center">
           {/* Live badge */}
-          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-5 py-2 mb-8">
-            <span>🔥</span>
-            <span className="text-sm font-semibold text-green-300">Now Live in {location.city}</span>
+          <div className="inline-flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-5 py-2.5 mb-10 backdrop-blur-sm">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
+            </span>
+            <span className="text-sm font-semibold text-amber-200/80 tracking-wide">Now Live in {location.city}</span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 tracking-tight">
-            <span className="text-white">AI creates the project.</span>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold leading-[1.02] mb-7 tracking-[-0.03em]">
+            <span className="text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.1)]">AI creates the project.</span>
             <br />
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent animate-gradient">
+            <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_60px_rgba(245,183,49,0.3)]">
               You bring the talent.
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg sm:text-xl text-white/45 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
             ShowBizy generates creative briefs and assembles local teams of film, music, and entertainment professionals to bring them to life.
           </p>
 
@@ -266,16 +287,25 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
             <Link
               href="/signup"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-purple-500/25 whitespace-nowrap text-center"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 px-9 py-4 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-amber-500/25 whitespace-nowrap text-center text-black"
             >
               Get Started Free →
             </Link>
             <Link
               href="/pricing"
-              className="bg-white/5 border border-white/10 px-8 py-3.5 rounded-xl font-bold hover:bg-white/10 transition whitespace-nowrap text-center"
+              className="bg-white/[0.06] border border-white/[0.12] px-9 py-4 rounded-xl font-bold hover:bg-white/10 hover:border-white/20 transition whitespace-nowrap text-center backdrop-blur-sm"
             >
               See Pricing
             </Link>
+          </div>
+
+          {/* Trust indicators */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-14 text-xs text-white/25">
+            <span className="flex items-center gap-1.5">⭐ 4.9/5 from 500+ creatives</span>
+            <span className="hidden sm:inline text-white/10">|</span>
+            <span className="flex items-center gap-1.5">🎬 120+ projects generated</span>
+            <span className="hidden sm:inline text-white/10">|</span>
+            <span className="flex items-center gap-1.5">🌍 Live in 3 cities</span>
           </div>
         </div>
       </section>
