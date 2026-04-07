@@ -24,7 +24,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Failed to fetch cities' }, { status: 500 })
     }
 
-    const uniqueCities = [...new Set((cities ?? []).map(c => c.city).filter(Boolean))]
+    const uniqueCities = [...new Set((cities ?? []).map((c: { city: string }) => c.city).filter(Boolean))]
 
     if (uniqueCities.length === 0) {
       return NextResponse.json({ message: 'No cities with active users found' })

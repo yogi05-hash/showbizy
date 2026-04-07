@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     }
 
     // Format projects to match frontend expectations
-    const formattedProjects = projects?.map(project => ({
+    const formattedProjects = projects?.map((project: any) => ({
       id: project.id,
       title: project.title,
       stream: project.stream,

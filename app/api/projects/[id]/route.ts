@@ -141,7 +141,7 @@ export async function POST(
       .select('filled')
       .eq('project_id', projectId)
 
-    const filledCount = projectRoles?.filter(r => r.filled).length || 0
+    const filledCount = projectRoles?.filter((r: { filled: boolean }) => r.filled).length || 0
 
     await supabaseAdmin
       .from('showbizy_projects')
