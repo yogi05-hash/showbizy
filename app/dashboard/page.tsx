@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MOCK_PROJECTS } from '@/lib/data'
+import { detectLocation, formatPrice, PRICING } from '@/lib/location'
 
 interface UserData {
   id: string
@@ -48,6 +48,11 @@ function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
+  const [matchedProjects, setMatchedProjects] = useState<any[]>([])
+  const [activeProjects, setActiveProjects] = useState<any[]>([])
+  const [matchesLoading, setMatchesLoading] = useState(false)
+  const loc = detectLocation()
+  const proPrice = formatPrice(PRICING[loc.currency.code].pro, loc.currency.code)
 
   useEffect(() => {
     const stored = localStorage.getItem('showbizy_user')
@@ -97,6 +102,30 @@ function DashboardPage() {
     fetchUser()
   }, [router, searchParams])
 
+  // Fetch user's matches
+  useEffect(() => {
+    if (!user) return
+
+    const fetchMatches = async () => {
+      try {
+        setMatchesLoading(true)
+        const response = await fetch(`/api/match?user_id=${user.id}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const projects = data.matches?.map((match: any) => match.showbizy_projects) || []
+          setMatchedProjects(projects.slice(0, 3))
+        }
+      } catch (error) {
+        console.error('Error fetching matches:', error)
+      } finally {
+        setMatchesLoading(false)
+      }
+    }
+
+    fetchMatches()
+  }, [user])
+
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center">
@@ -113,11 +142,7 @@ function DashboardPage() {
 
   const userInitial = user.name?.charAt(0)?.toUpperCase() || '?'
 
-  const matchedProjects = MOCK_PROJECTS.filter(p =>
-    user.streams?.includes(p.stream) || p.location?.includes(user.city || '')
-  ).slice(0, 3)
 
-  const activeProjects = MOCK_PROJECTS.slice(0, 2)
 
   const memberSince = new Date(user.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 
@@ -184,7 +209,17 @@ function DashboardPage() {
                 <h2 className="text-xl font-bold">Matched Projects</h2>
                 <Link href="/projects" className="text-purple-400 text-sm hover:text-purple-300 transition">View all →</Link>
               </div>
-              {matchedProjects.length > 0 ? (
+              {matchesLoading ? (
+                <div className="grid gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 animate-pulse">
+                      <div className="h-6 bg-white/10 rounded mb-2"></div>
+                      <div className="h-4 bg-white/10 rounded w-1/2 mb-3"></div>
+                      <div className="h-16 bg-white/10 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : matchedProjects.length > 0 ? (
                 <div className="grid gap-4">
                   {matchedProjects.map((project) => (
                     <Link key={project.id} href={`/projects/${project.id}`} className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] hover:border-purple-500/30 transition group">
@@ -199,7 +234,7 @@ function DashboardPage() {
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                          <span className="text-xs text-white/40">{project.teamSize - project.roles.filter((r: { filled: boolean }) => r.filled).length} spots left</span>
+                          <span className="text-xs text-white/40">{project.team_size - project.filled_roles} spots left</span>
                         </div>
                         <span className="text-xs text-white/30">{project.timeline}</span>
                       </div>
@@ -208,8 +243,25 @@ function DashboardPage() {
                 </div>
               ) : (
                 <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                  <p className="text-white/40">No matches yet. Our AI is scanning your area for projects.</p>
-                  <p className="text-white/30 text-sm mt-2">First matches usually arrive within 48 hours.</p>
+                  <p className="text-white/40 mb-3">No matches yet. Let's generate some projects for your area!</p>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        setMatchesLoading(true)
+                        await fetch('/api/cron/generate-projects', { method: 'POST' })
+                        // Wait a moment then refresh matches
+                        setTimeout(() => {
+                          window.location.reload()
+                        }, 2000)
+                      } catch {
+                        alert('Failed to generate projects. Please try again.')
+                        setMatchesLoading(false)
+                      }
+                    }}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition text-sm font-medium"
+                  >
+                    Generate New Projects
+                  </button>
                 </div>
               )}
             </section>
@@ -217,26 +269,14 @@ function DashboardPage() {
             {/* Active Projects */}
             <section>
               <h2 className="text-xl font-bold mb-4">Active Projects</h2>
-              <div className="grid gap-4">
-                {activeProjects.map((project) => {
-                  const milestones = ['Pre-production', 'Production', 'Post-production', 'Published']
-                  const currentMilestone = 1
-                  return (
-                    <Link key={project.id} href={`/projects/${project.id}`} className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] transition">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold">{project.title}</h3>
-                        <span className="text-xs text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full">{milestones[currentMilestone]}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        {milestones.map((_, i) => (
-                          <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= currentMilestone ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/10'}`} />
-                        ))}
-                      </div>
-                    </Link>
-                  )
-                })}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                <p className="text-white/40">No active projects yet.</p>
+                <p className="text-white/30 text-sm mt-2">Join a project to see your progress here!</p>
               </div>
             </section>
+
+            {/* Job Applications */}
+            <JobApplicationsSection userId={user.id} />
 
             {/* Feed */}
             <section>
@@ -271,7 +311,7 @@ function DashboardPage() {
                   Unlock unlimited applications, priority matching, and more.
                 </p>
                 <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg text-sm font-semibold group-hover:opacity-90 transition">
-                  £19/month →
+                  {proPrice}/month →
                 </span>
               </Link>
             )}
@@ -363,5 +403,67 @@ function DashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ─── Job Applications Section ─── */
+function JobApplicationsSection({ userId }: { userId: string }) {
+  const [apps, setApps] = useState<{ id: string; job_id: string; job_title: string; company: string; location: string; status: string; created_at: string }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/jobs/apply?user_id=${userId}`)
+      .then(r => r.json())
+      .then(d => { if (d.applications) setApps(d.applications); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  if (loading) return null
+  if (apps.length === 0) {
+    return (
+      <section>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Job Applications</h2>
+          <Link href="/jobs" className="text-sm text-purple-400 hover:text-purple-300 transition">Browse Jobs →</Link>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+          <span className="text-3xl block mb-2">💼</span>
+          <p className="text-white/40 text-sm mb-3">No job applications yet</p>
+          <Link href="/jobs" className="text-purple-400 text-sm font-medium hover:text-purple-300 transition">Browse industry jobs →</Link>
+        </div>
+      </section>
+    )
+  }
+
+  const statusStyles: Record<string, string> = {
+    applied: 'bg-amber-400/20 text-amber-300',
+    viewed: 'bg-blue-400/20 text-blue-300',
+    shortlisted: 'bg-green-400/20 text-green-300',
+    rejected: 'bg-red-400/20 text-red-300',
+  }
+
+  return (
+    <section>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Job Applications</h2>
+        <Link href="/jobs" className="text-sm text-purple-400 hover:text-purple-300 transition">Browse Jobs →</Link>
+      </div>
+      <div className="space-y-3">
+        {apps.slice(0, 5).map(app => (
+          <div key={app.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold">{app.job_title}</h4>
+              <p className="text-xs text-purple-400">{app.company}{app.location ? ` • ${app.location}` : ''}</p>
+            </div>
+            <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium capitalize ${statusStyles[app.status] || statusStyles.applied}`}>
+              {app.status}
+            </span>
+          </div>
+        ))}
+        {apps.length > 5 && (
+          <p className="text-xs text-white/30 text-center">+{apps.length - 5} more applications</p>
+        )}
+      </div>
+    </section>
   )
 }

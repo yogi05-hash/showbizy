@@ -1,62 +1,164 @@
 'use client'
 
 import Link from 'next/link'
-import { use, useState } from 'react'
-import { MOCK_PROJECTS, MOCK_MESSAGES } from '@/lib/data'
+import { use, useState, useEffect } from 'react'
+import { MOCK_MESSAGES } from '@/lib/data'
 import ProjectChat from '@/app/components/ProjectChat'
+
+interface Project {
+  id: string
+  title: string
+  stream: string
+  streamIcon: string
+  genre?: string
+  location: string
+  timeline: string
+  description: string
+  brief: string
+  roles: Array<{
+    id?: string
+    role: string
+    description?: string
+    skills_required?: string[]
+    filled: boolean
+    member?: { id?: string; name: string; avatar: string }
+  }>
+  teamSize: number
+  filledRoles: number
+  status: string
+  createdAt: string
+  milestones?: Array<{
+    name: string
+    status: string
+    date: string
+  }>
+}
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const project = MOCK_PROJECTS.find(p => p.id === id)
+  const [project, setProject] = useState<Project | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'brief' | 'team' | 'chat' | 'files'>('brief')
   const [joined, setJoined] = useState(false)
   const [joining, setJoining] = useState(false)
+  const [isPro, setIsPro] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+
+  // Fetch project data
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/projects/${id}`)
+        
+        if (!response.ok) {
+          throw new Error('Project not found')
+        }
+        
+        const data = await response.json()
+        setProject(data.project)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching project:', err)
+        setError('Failed to load project')
+        setProject(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProject()
+  }, [id])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('showbizy_user')
+      if (stored) {
+        const user = JSON.parse(stored)
+        setIsPro(!!user.is_pro)
+      }
+    } catch {}
+  }, [])
+
+  const isPaid = isPro
 
   const handleJoin = async () => {
+    if (!isPaid) {
+      setShowUpgradeModal(true)
+      return
+    }
     if (joined || !project) {
       setJoined(false)
       return
     }
+    
     setJoining(true)
-    setJoined(true)
-
-    // Notify existing team members via email (mock data for now)
+    
     try {
-      const filledMembers = project.roles.filter(r => r.filled && r.member)
-      await fetch('/api/emails/team-joined', {
+      // Get user data from localStorage
+      const stored = localStorage.getItem('showbizy_user')
+      if (!stored) {
+        alert('Please log in first')
+        return
+      }
+      
+      const user = JSON.parse(stored)
+      const openRole = project.roles.find(r => !r.filled)
+      
+      if (!openRole?.id) {
+        alert('No open roles available')
+        return
+      }
+
+      const response = await fetch(`/api/projects/${project.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          teamMembers: filledMembers.map(r => ({
-            name: r.member?.name || '',
-            email: `${(r.member?.name || 'user').toLowerCase().replace(/\s+/g, '.')}@example.com`,
-            skills: [],
-          })),
-          newMember: {
-            name: 'You',
-            email: 'user@example.com',
-            skills: ['Creative'],
-          },
-          project: {
-            id: project.id,
-            title: project.title,
-            stream: project.stream,
-            location: project.location,
-          },
-        }),
+          user_id: user.id,
+          role_id: openRole.id
+        })
       })
+
+      if (!response.ok) {
+        const error = await response.json()
+        alert(error.error || 'Failed to join project')
+        return
+      }
+
+      setJoined(true)
+      
+      // Refresh project data
+      const projectResponse = await fetch(`/api/projects/${id}`)
+      if (projectResponse.ok) {
+        const data = await projectResponse.json()
+        setProject(data.project)
+      }
     } catch (err) {
-      console.error('Failed to send team-joined email:', err)
+      console.error('Failed to join project:', err)
+      alert('Failed to join project')
+    } finally {
+      setJoining(false)
     }
-    setJoining(false)
   }
 
-  if (!project) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <h1 className="text-xl font-bold">Loading project...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !project) {
     return (
       <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-6xl mb-4">🔍</p>
-          <h1 className="text-2xl font-bold mb-2">Project not found</h1>
+          <h1 className="text-2xl font-bold mb-2">{error || 'Project not found'}</h1>
           <Link href="/projects" className="text-purple-400 hover:text-purple-300 transition">← Back to projects</Link>
         </div>
       </div>
@@ -114,33 +216,35 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Milestones */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 mb-8">
-          <h3 className="font-bold text-sm text-white/50 uppercase tracking-wider mb-4">Project Timeline</h3>
-          <div className="flex items-center gap-0">
-            {project.milestones.map((m, i) => (
-              <div key={i} className="flex-1 relative">
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full z-10 shrink-0 ${
-                    m.status === 'completed' ? 'bg-green-400' :
-                    m.status === 'active' ? 'bg-purple-400 ring-4 ring-purple-400/20' :
-                    'bg-white/20'
-                  }`} />
-                  {i < project.milestones.length - 1 && (
-                    <div className={`flex-1 h-0.5 ${
-                      m.status === 'completed' ? 'bg-green-400/50' : 'bg-white/10'
+        {project.milestones && project.milestones.length > 0 && (
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 mb-8">
+            <h3 className="font-bold text-sm text-white/50 uppercase tracking-wider mb-4">Project Timeline</h3>
+            <div className="flex items-center gap-0">
+              {project.milestones.map((m, i) => (
+                <div key={i} className="flex-1 relative">
+                  <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full z-10 shrink-0 ${
+                      m.status === 'completed' ? 'bg-green-400' :
+                      m.status === 'active' ? 'bg-purple-400 ring-4 ring-purple-400/20' :
+                      'bg-white/20'
                     }`} />
-                  )}
+                    {project.milestones && i < project.milestones.length - 1 && (
+                      <div className={`flex-1 h-0.5 ${
+                        m.status === 'completed' ? 'bg-green-400/50' : 'bg-white/10'
+                      }`} />
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <p className={`text-sm font-medium ${m.status === 'active' ? 'text-purple-400' : m.status === 'completed' ? 'text-green-400' : 'text-white/40'}`}>
+                      {m.name}
+                    </p>
+                    <p className="text-xs text-white/30">{m.date}</p>
+                  </div>
                 </div>
-                <div className="mt-2">
-                  <p className={`text-sm font-medium ${m.status === 'active' ? 'text-purple-400' : m.status === 'completed' ? 'text-green-400' : 'text-white/40'}`}>
-                    {m.name}
-                  </p>
-                  <p className="text-xs text-white/30">{m.date}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-white/[0.03] rounded-xl p-1 w-fit">
@@ -186,56 +290,78 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {/* Team Tab */}
             {activeTab === 'team' && (
               <div className="space-y-6">
-                {/* Filled roles */}
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
-                    Team Members
-                    <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">{filledRoles.length} joined</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {filledRoles.map((role, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03]">
-                        <span className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-lg">
-                          {role.member?.avatar}
-                        </span>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{role.member?.name}</p>
-                          <p className="text-xs text-purple-400">{role.role}</p>
-                        </div>
-                        <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Confirmed</span>
-                      </div>
-                    ))}
+                {!isPaid ? (
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
+                    <span className="text-4xl mb-4 block">🔒</span>
+                    <h3 className="text-xl font-bold mb-2">Pro Feature</h3>
+                    <p className="text-white/50 mb-4">Upgrade to Pro to view team member profiles and apply to roles.</p>
+                    <Link href="/pricing" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition">
+                      Upgrade to Pro →
+                    </Link>
                   </div>
-                </div>
-
-                {/* Open roles */}
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
-                    Roles Needed
-                    <span className="text-xs bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full">{openRoles.length} open</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {openRoles.map((role, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-dashed border-white/10">
-                        <div className="flex items-center gap-3">
-                          <span className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-lg text-white/30">?</span>
-                          <div>
-                            <p className="font-medium text-sm">{role.role}</p>
-                            <p className="text-xs text-white/40">Open position</p>
+                ) : (
+                  <>
+                    {/* Filled roles */}
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+                      <h3 className="font-bold mb-4 flex items-center gap-2">
+                        Team Members
+                        <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">{filledRoles.length} joined</span>
+                      </h3>
+                      <div className="space-y-3">
+                        {filledRoles.map((role, i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03]">
+                            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-lg">
+                              {role.member?.avatar}
+                            </span>
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{role.member?.name}</p>
+                              <p className="text-xs text-purple-400">{role.role}</p>
+                            </div>
+                            <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Confirmed</span>
                           </div>
-                        </div>
-                        <button className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1.5 rounded-full border border-purple-500/20 hover:bg-purple-600/30 transition">
-                          Apply →
-                        </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+
+                    {/* Open roles */}
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+                      <h3 className="font-bold mb-4 flex items-center gap-2">
+                        Roles Needed
+                        <span className="text-xs bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full">{openRoles.length} open</span>
+                      </h3>
+                      <div className="space-y-3">
+                        {openRoles.map((role, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-dashed border-white/10">
+                            <div className="flex items-center gap-3">
+                              <span className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-lg text-white/30">?</span>
+                              <div>
+                                <p className="font-medium text-sm">{role.role}</p>
+                                <p className="text-xs text-white/40">Open position</p>
+                              </div>
+                            </div>
+                            <button className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1.5 rounded-full border border-purple-500/20 hover:bg-purple-600/30 transition">
+                              Apply →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
             {/* Chat Tab */}
-            {activeTab === 'chat' && (
+            {activeTab === 'chat' && !isPaid ? (
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
+                <span className="text-4xl mb-4 block">💬</span>
+                <h3 className="text-xl font-bold mb-2">Pro Feature</h3>
+                <p className="text-white/50 mb-4">Upgrade to Pro to message team members directly.</p>
+                <Link href="/pricing" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition">
+                  Upgrade to Pro →
+                </Link>
+              </div>
+            ) : activeTab === 'chat' && (
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl h-[600px] overflow-hidden">
                 <ProjectChat
                   messages={MOCK_MESSAGES}
@@ -344,6 +470,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowUpgradeModal(false)}>
+          <div className="bg-[#0a0a1a] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center" onClick={e => e.stopPropagation()}>
+            <span className="text-5xl mb-4 block">⚡</span>
+            <h2 className="text-2xl font-bold mb-2">Upgrade to Pro</h2>
+            <p className="text-white/50 mb-6">Join projects, apply to roles, view team profiles, and message creators directly.</p>
+            <Link href="/pricing" className="inline-block w-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-xl font-bold hover:opacity-90 transition mb-3">
+              See Pro Plans →
+            </Link>
+            <button onClick={() => setShowUpgradeModal(false)} className="text-white/40 text-sm hover:text-white transition">
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,21 +2,31 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { detectLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 
 const FREE_FEATURES = [
   'Create your profile',
-  'Browse projects',
-  'Apply to 3 projects/month',
-  'Basic matching',
+  'Browse AI-generated projects',
+  'Community access',
 ]
 
 const PRO_FEATURES = [
   'Everything in Free',
-  'Unlimited project applications',
-  'Priority matching',
-  'Featured profile badge',
+  'Apply to projects',
+  'AI-powered matching',
+  'Featured portfolio page',
   'Direct messaging',
   'Weekly project digest email',
+]
+
+const STUDIO_FEATURES = [
+  'Everything in Pro',
+  'Team management tools',
+  'Advanced analytics',
+  'Featured placement priority',
+  'Verified creative badge',
+  'Custom project briefs',
+  'Early access to new features',
 ]
 
 interface UserData {
@@ -31,8 +41,16 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState<UserData | null>(null)
+  const [location, setLocation] = useState<LocationData>({
+    city: 'London',
+    country: 'UK',
+    currency: { code: 'GBP' as const, symbol: '£' }
+  })
 
   useEffect(() => {
+    // Detect location
+    const detectedLocation = detectLocation()
+    setLocation(detectedLocation)
     const stored = localStorage.getItem('showbizy_user')
     if (stored) {
       try {
@@ -152,11 +170,11 @@ export default function PricingPage() {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Free */}
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 flex flex-col">
             <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-2">Free</h3>
-            <p className="text-5xl font-bold mb-1">£0</p>
+            <p className="text-5xl font-bold mb-1">{formatPrice(PRICING[location.currency.code].free, location.currency.code)}</p>
             <p className="text-sm text-white/30 mb-8">Forever free</p>
             <ul className="space-y-4 mb-8 flex-1">
               {FREE_FEATURES.map((f) => (
@@ -182,7 +200,7 @@ export default function PricingPage() {
               </span>
               <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">Pro</h3>
               <p className="text-5xl font-bold mb-1">
-                £19<span className="text-lg text-white/40">/mo</span>
+                {formatPrice(PRICING[location.currency.code].pro, location.currency.code)}<span className="text-lg text-white/40">/mo</span>
               </p>
               <p className="text-sm text-white/30 mb-8">For serious creatives</p>
               <ul className="space-y-4 mb-8 flex-1">
@@ -214,6 +232,37 @@ export default function PricingPage() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Studio */}
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 flex flex-col">
+            <h3 className="text-sm font-bold text-orange-400 uppercase tracking-wider mb-2">Studio</h3>
+            <p className="text-5xl font-bold mb-1">
+              {formatPrice(PRICING[location.currency.code].studio, location.currency.code)}<span className="text-lg text-white/40">/mo</span>
+            </p>
+            <p className="text-sm text-white/30 mb-8">For teams & agencies</p>
+            <ul className="space-y-4 mb-8 flex-1">
+              {STUDIO_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-3 text-sm text-white/80">
+                  <span className="text-orange-400 mt-0.5 flex-shrink-0">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={handleUpgrade}
+              disabled={loading}
+              className="w-full bg-white/5 border border-white/10 py-3.5 rounded-xl font-semibold text-sm hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  Loading...
+                </span>
+              ) : (
+                'Upgrade to Studio'
+              )}
+            </button>
           </div>
         </div>
 

@@ -1,16 +1,67 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { STREAMS, MOCK_PROJECTS } from '@/lib/data'
+import { useState, useEffect } from 'react'
+import { STREAMS } from '@/lib/data'
+
+interface Project {
+  id: string
+  title: string
+  stream: string
+  streamIcon: string
+  genre?: string
+  location: string
+  timeline: string
+  description: string
+  brief: string
+  roles: Array<{
+    role: string
+    description?: string
+    filled: boolean
+    member?: { name: string; avatar: string }
+  }>
+  teamSize: number
+  filledRoles: number
+  status: string
+  createdAt: string
+}
 
 export default function ProjectsPage() {
   const [streamFilter, setStreamFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [roleFilter, setRoleFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredProjects = MOCK_PROJECTS.filter((project) => {
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/projects')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects')
+        }
+        
+        const data = await response.json()
+        setProjects(data.projects || [])
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching projects:', err)
+        setError('Failed to load projects')
+        setProjects([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
+
+  const filteredProjects = projects.filter((project) => {
     if (streamFilter !== 'all' && project.stream !== streamFilter) return false
     if (locationFilter !== 'all' && !project.location.toLowerCase().includes(locationFilter.toLowerCase())) return false
     if (roleFilter !== 'all' && !project.roles.some(r => r.role.toLowerCase().includes(roleFilter.toLowerCase()) && !r.filled)) return false
@@ -18,8 +69,8 @@ export default function ProjectsPage() {
     return true
   })
 
-  const uniqueLocations = [...new Set(MOCK_PROJECTS.map(p => p.location))]
-  const uniqueRoles = [...new Set(MOCK_PROJECTS.flatMap(p => p.roles.filter(r => !r.filled).map(r => r.role)))]
+  const uniqueLocations = [...new Set(projects.map(p => p.location))]
+  const uniqueRoles = [...new Set(projects.flatMap(p => p.roles.filter(r => !r.filled).map(r => r.role)))]
 
   return (
     <div className="min-h-screen bg-[#030712] text-white">
@@ -89,7 +140,61 @@ export default function ProjectsPage() {
         </div>
 
         {/* Results count */}
-        <p className="text-sm text-white/40 mb-6">{filteredProjects.length} projects found</p>
+        <p className="text-sm text-white/40 mb-6">
+          {loading ? 'Loading...' : `${filteredProjects.length} projects found`}
+        </p>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 animate-pulse">
+                <div className="h-4 bg-white/10 rounded mb-4"></div>
+                <div className="h-6 bg-white/10 rounded mb-2"></div>
+                <div className="h-4 bg-white/10 rounded w-3/4 mb-4"></div>
+                <div className="h-16 bg-white/10 rounded mb-4"></div>
+                <div className="h-2 bg-white/10 rounded"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-20">
+            <p className="text-4xl mb-4">⚠️</p>
+            <h3 className="text-xl font-bold mb-2">Failed to load projects</h3>
+            <p className="text-white/50 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg transition"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && projects.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-4xl mb-4">🎬</p>
+            <h3 className="text-xl font-bold mb-2">AI is generating projects for your area...</h3>
+            <p className="text-white/50 mb-6">Check back in a few minutes for new creative opportunities!</p>
+            <button 
+              onClick={async () => {
+                try {
+                  await fetch('/api/cron/generate-projects', { method: 'POST' })
+                  window.location.reload()
+                } catch {
+                  alert('Failed to generate projects. Please try again.')
+                }
+              }}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg transition"
+            >
+              Generate Projects Now
+            </button>
+          </div>
+        )}
 
         {/* Projects Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -146,7 +251,7 @@ export default function ProjectsPage() {
           ))}
         </div>
 
-        {filteredProjects.length === 0 && (
+        {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (
           <div className="text-center py-20">
             <p className="text-4xl mb-4">🔍</p>
             <h3 className="text-xl font-bold mb-2">No projects found</h3>

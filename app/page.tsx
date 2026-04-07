@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { detectLocation, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 
 /* ─── DATA ─── */
-const FEATURED_PROJECTS = [
+const getFeaturedProjects = (cities: string[]) => [
   {
     title: 'The Last Bookstore',
     genre: 'Short Film',
     subgenre: 'Drama',
-    location: 'London',
+    location: cities[0] || 'London',
     team: 4,
     status: 'Casting Now',
     statusColor: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
@@ -22,7 +23,7 @@ const FEATURED_PROJECTS = [
     title: 'Neon Nights',
     genre: 'Music Video',
     subgenre: 'Electronic / Visual',
-    location: 'Manchester',
+    location: cities[1] || 'Manchester',
     team: 6,
     status: 'In Production',
     statusColor: 'bg-green-400/20 text-green-300 border-green-400/30',
@@ -34,7 +35,7 @@ const FEATURED_PROJECTS = [
     title: 'Street Canvas',
     genre: 'Documentary',
     subgenre: 'Urban Art',
-    location: 'Birmingham',
+    location: cities[2] || 'Birmingham',
     team: 3,
     status: 'Post-Production',
     statusColor: 'bg-purple-400/20 text-purple-300 border-purple-400/30',
@@ -44,34 +45,34 @@ const FEATURED_PROJECTS = [
   },
 ]
 
-const TESTIMONIALS = [
+const getTestimonials = (cities: string[]) => [
   {
     name: 'Priya Sharma',
     role: 'Director',
-    city: 'London',
+    city: cities[0] || 'London',
     photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
     quote: 'Signed up Monday, matched Tuesday, we started shooting by Saturday. This is how creative projects should work.',
   },
   {
     name: 'Marcus Johnson',
     role: 'Music Producer',
-    city: 'Manchester',
+    city: cities[1] || 'Manchester',
     photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
     quote: "I've been looking for a platform that actually connects creatives. ShowBizy matched me with a filmmaker who needed exactly my sound.",
   },
   {
     name: 'Elena Torres',
     role: 'Cinematographer',
-    city: 'Birmingham',
+    city: cities[2] || 'Birmingham',
     photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
     quote: "The AI-generated briefs are surprisingly good. It's like having a creative producer who never sleeps.",
   },
 ]
 
-const FAQ_ITEMS = [
+const getFaqItems = (detectedCity: string, currencyCode: 'INR' | 'USD' | 'GBP' | 'EUR' = 'GBP') => [
   {
     q: 'Is it really free?',
-    a: 'Yes! Create your profile, browse AI-generated projects, and get matched — completely free. Pro members get unlimited applications, priority matching, and a featured profile for £19/month.',
+    a: `Yes! Create your profile and browse AI-generated projects for free. To apply to projects, get AI-powered matching, and a featured profile — upgrade to Pro from ${formatPrice(PRICING[currencyCode].pro, currencyCode)}/month.`,
   },
   {
     q: 'How does AI generate projects?',
@@ -79,28 +80,61 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What cities are you in?',
-    a: "We're live in London now, with Manchester and Birmingham rolling out next. Sign up to get notified when we expand to your city.",
+    a: `We're live in ${detectedCity} and expanding globally. Our AI creates location-specific projects tailored to your local creative scene.`,
   },
 ]
 
-const TICKER_ITEMS = [
-  '🎬 Priya just joined from London',
-  "🎯 Marcus matched to 'Neon Nights'",
-  "🎵 New project generated: 'Vinyl Dreams' in Manchester",
-  "📸 Elena's profile featured this week",
-  "🎭 'The Last Bookstore' team is now full",
-  '🔥 47 new creatives joined today',
-  "🎬 'Street Canvas' entered post-production",
-  '🎯 New match: Cinematographer needed in Birmingham',
-]
+const getTickerItems = (location: LocationData, cities: string[]) => {
+  // Names by region for variety
+  const namesByRegion = {
+    India: ['Priya', 'Arjun', 'Sneha', 'Vikram', 'Ananya'],
+    USA: ['Marcus', 'Sarah', 'Jordan', 'Chris', 'Ashley'],
+    UK: ['James', 'Emma', 'Ollie', 'Sophie', 'Charlotte'],
+    Europe: ['Elena', 'Luca', 'Marie', 'Klaus', 'Sofia'],
+  }
+
+  // Get names for current region, with some variety from other regions
+  const localNames = namesByRegion[location.country as keyof typeof namesByRegion] || namesByRegion.UK
+  const allNames = [...localNames, ...namesByRegion.UK.slice(0, 2)] // Mix in some UK names
+  
+  const primaryCity = location.city
+  const secondaryCity = cities[1] || 'Manchester'
+  const tertiaryCity = cities[2] || 'Birmingham'
+
+  return [
+    `🎬 ${allNames[0]} just joined from ${primaryCity}`,
+    `🎯 ${allNames[1]} matched to 'Neon Nights'`,
+    `🎵 New project generated: 'Vinyl Dreams' in ${secondaryCity}`,
+    `📸 ${allNames[2]}'s profile featured this week`,
+    `🎭 'The Last Bookstore' team is now full`,
+    '🔥 47 new creatives joined today',
+    `🎬 'Street Canvas' entered post-production`,
+    `🎯 New match: Cinematographer needed in ${tertiaryCity}`,
+    `🌟 ${allNames[3]} completed their first project in ${primaryCity}`,
+    `🎪 3 new projects launching in ${primaryCity} this week`,
+  ]
+}
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [location, setLocation] = useState<LocationData>({
+    city: 'London',
+    country: 'UK',
+    currency: { code: 'GBP' as const, symbol: '£' }
+  })
+  const [cities, setCities] = useState(['London', 'Manchester', 'Birmingham'])
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
     if (user) setIsLoggedIn(true)
+
+    // Detect location
+    const detectedLocation = detectLocation()
+    setLocation(detectedLocation)
+    
+    const detectedCities = getCitiesForLocation(detectedLocation)
+    setCities(detectedCities)
   }, [])
 
   return (
@@ -135,6 +169,7 @@ export default function Home() {
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>
           <Link href="#creatives" className="text-white/50 hover:text-white transition">Creatives</Link>
+          <Link href="/jobs" className="text-purple-400 hover:text-purple-300 transition font-medium">Jobs</Link>
           <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
         </div>
         <div className="flex items-center gap-3">
@@ -165,7 +200,7 @@ export default function Home() {
           {/* Live badge */}
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-5 py-2 mb-8">
             <span>🔥</span>
-            <span className="text-sm font-semibold text-green-300">Now Live in London</span>
+            <span className="text-sm font-semibold text-green-300">Now Live in {location.city}</span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 tracking-tight">
@@ -201,7 +236,7 @@ export default function Home() {
       {/* ─── ACTIVITY TICKER ─── */}
       <div className="relative border-t border-b border-white/5 bg-white/[0.02] overflow-hidden py-3">
         <div className="ticker-track flex whitespace-nowrap">
-          {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+          {[...getTickerItems(location, cities), ...getTickerItems(location, cities)].map((item, i) => (
             <span key={i} className="inline-block px-8 text-sm text-white/40">
               {item}
             </span>
@@ -218,7 +253,7 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {FEATURED_PROJECTS.map((project) => (
+          {getFeaturedProjects(cities).map((project) => (
             <div
               key={project.title}
               className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-500 hover:-translate-y-1"
@@ -474,7 +509,7 @@ export default function Home() {
                 </div>
                 <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
                   <span className="text-white/40 text-xs block mb-1">Location</span>
-                  <span className="text-white/80 font-medium">East London, UK</span>
+                  <span className="text-white/80 font-medium">{location.city}, {location.country}</span>
                 </div>
                 <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
                   <span className="text-white/40 text-xs block mb-1">Team Size</span>
@@ -510,7 +545,7 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t) => (
+          {getTestimonials(cities).map((t) => (
             <div
               key={t.name}
               className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-transparent transition-all duration-500 testimonial-card"
@@ -541,10 +576,72 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── INDUSTRY JOBS ─── */}
+      <section className="max-w-7xl mx-auto px-6 py-24">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
+          <div>
+            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">🔥 Industry Jobs</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-3">Real entertainment jobs</h2>
+            <p className="text-white/50 text-lg max-w-lg">Live opportunities from BBC, Netflix, Channel 4, Framestore, and more. Pro members get full access.</p>
+          </div>
+          <Link href="/jobs" className="text-purple-400 hover:text-purple-300 font-medium transition text-sm flex items-center gap-1">
+            View all jobs →
+          </Link>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { id: 'j1', title: 'Cinematographer — Feature Film', company: 'Vertigo Productions', location: 'London', salary: '£350-500/day', category: 'Film', type: 'Freelance', posted: '2h ago' },
+            { id: 'j3', title: 'Senior Video Editor', company: 'BBC Studios', location: 'London', salary: '£45-55K/year', category: 'TV', type: 'Full-time', posted: '1d ago' },
+            { id: 'j2', title: 'Music Video Director', company: 'Neon Records', location: 'Manchester', salary: '£2-4K/project', category: 'Music', type: 'Freelance', posted: '5h ago' },
+            { id: 'j6', title: 'VFX Artist — Sci-Fi Series', company: 'Framestore', location: 'London', salary: '£55-70K/year', category: 'Film', type: 'Full-time', posted: '1d ago' },
+            { id: 'j10', title: 'Production Coordinator', company: 'Netflix UK', location: 'London', salary: '£35-42K/year', category: 'TV', type: 'Contract', posted: '2d ago' },
+            { id: 'j7', title: 'Podcast Producer', company: 'Spotify Studios', location: 'London', salary: '£40-50K/year', category: 'Music', type: 'Full-time', posted: '4h ago' },
+          ].map((job) => {
+            const catColor: Record<string, string> = {
+              Film: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
+              TV: 'bg-blue-400/20 text-blue-300 border-blue-400/30',
+              Music: 'bg-pink-400/20 text-pink-300 border-pink-400/30',
+            }
+            return (
+              <Link href="/jobs" key={job.id}>
+                <div className="relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300 h-full">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-sm font-bold">{job.title}</h3>
+                      <p className="text-xs text-purple-400 font-medium mt-0.5">{job.company}</p>
+                    </div>
+                    <span className={`text-[10px] border px-2 py-0.5 rounded-full font-medium ${catColor[job.category] || 'bg-white/10 text-white/50 border-white/10'}`}>
+                      {job.category}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-[11px] text-white/40">
+                    <span>📍 {job.location}</span>
+                    <span>💰 {job.salary}</span>
+                    <span>💼 {job.type}</span>
+                    <span>🕐 {job.posted}</span>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-1.5 text-[11px] text-white/25">
+                    <span>🔒</span>
+                    <span>Pro members can view details &amp; apply</span>
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+
+        <div className="text-center mt-8">
+          <Link href="/jobs" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition shadow-lg shadow-purple-500/25">
+            View All 12+ Jobs →
+          </Link>
+        </div>
+      </section>
+
       {/* ─── PRICING TEASER ─── */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center">
-          <p className="text-white/40 text-lg mb-4">Plans starting from <span className="text-white font-bold">£0/month</span></p>
+          <p className="text-white/40 text-lg mb-4">Plans starting from <span className="text-white font-bold">{formatPrice(PRICING[location.currency.code].free, location.currency.code)}/month</span></p>
           <Link href="/pricing" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition text-lg">
             View pricing plans →
           </Link>
@@ -565,7 +662,7 @@ export default function Home() {
               Create Your Free Profile →
             </Link>
             <p className="text-white/40 text-sm mt-4">
-              Pro features from <Link href="/pricing" className="text-purple-400 hover:text-purple-300 font-semibold transition">£19/month</Link>
+              Pro features from <Link href="/pricing" className="text-purple-400 hover:text-purple-300 font-semibold transition">{formatPrice(PRICING[location.currency.code].pro, location.currency.code)}/month</Link>
             </p>
           </div>
         </div>
@@ -578,7 +675,7 @@ export default function Home() {
           <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Got questions?</h2>
         </div>
         <div className="space-y-4">
-          {FAQ_ITEMS.map((item, i) => (
+          {getFaqItems(location.city, location.currency.code).map((item, i) => (
             <div
               key={i}
               className={`bg-white/[0.03] border rounded-2xl transition-all duration-300 overflow-hidden ${

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     // TODO: Add STRIPE_PRICE_ID to your .env.local
     // Create it in Stripe Dashboard → Products → Add Product
-    // Product: "ShowBizy Pro", Price: £19/month recurring
+    // Product: "ShowBizy Pro", Price: £9/month recurring (multi-currency via Stripe)
     const Stripe = (await import('stripe')).default
     const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-12-18.acacia' as import('stripe').Stripe.LatestApiVersion })
 

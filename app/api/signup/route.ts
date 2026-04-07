@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendWelcomeEmail } from '@/lib/email'
+import { sendWelcomeEmail, transporter } from '@/lib/email'
 
 export async function POST(request: Request) {
   try {
@@ -75,6 +75,20 @@ export async function POST(request: Request) {
     } catch (emailError) {
       console.error('Email send error:', emailError)
       // Don't fail the signup if email fails
+    }
+
+    // Notify admin of new signup
+    try {
+      await transporter.sendMail({
+        from: '"ShowBizy" <hello@bilabs.ai>',
+        to: 'yogibot05@gmail.com',
+        subject: `🎬 New ShowBizy signup: ${name} (${city || 'Unknown'})`,
+        html: `<p><strong>${name}</strong> (${email}) just signed up from <strong>${city || 'Unknown'}</strong>.</p>
+<p>Streams: ${(streams || []).join(', ') || 'None'}</p>
+<p>Skills: ${(skills || []).join(', ') || 'None'}</p>`,
+      })
+    } catch (adminEmailError) {
+      console.error('Admin notification email error:', adminEmailError)
     }
 
     // Include avatar in response for localStorage

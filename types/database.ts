@@ -80,3 +80,15 @@ export interface Credit {
   imdb_added: boolean
   created_at: string
 }
+
+export interface JobApplication {
+  id: string
+  user_id: string
+  job_id: string
+  job_title: string
+  company: string
+  location: string
+  cover_note: string
+  status: 'applied' | 'viewed' | 'shortlisted' | 'rejected'
+  created_at: string
+}

@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { supabaseAdmin } from '@/lib/supabase'
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
+const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions'
 
 export async function POST(req: Request) {
   try {
-    if (!openai) {
+    if (!DEEPSEEK_API_KEY) {
       return NextResponse.json({ 
         error: 'AI service not configured',
-        message: 'Please set OPENAI_API_KEY environment variable'
+        message: 'Please set DEEPSEEK_API_KEY environment variable'
       }, { status: 503 })
     }
 
@@ -54,32 +53,117 @@ Generate a compelling, achievable creative project brief. Return a JSON object:
 
 Make it creative, specific, achievable with a small team (3-8 people), and exciting enough that talented creatives would want to join. The project should feel like a real creative brief, not a template.`
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert creative director who generates inspiring, achievable project briefs across film, music, fashion, content, performing arts, visual arts, events, and brand campaigns. You understand how to assemble diverse creative teams and create projects that build portfolios and careers.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.9,
+    const response = await fetch(DEEPSEEK_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert creative director who generates inspiring, achievable project briefs across film, music, fashion, content, performing arts, visual arts, events, and brand campaigns. You understand how to assemble diverse creative teams and create projects that build portfolios and careers. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.9,
+      })
     })
 
-    const projectData = JSON.parse(completion.choices[0].message.content || '{}')
-
-    const fullProject = {
-      ...projectData,
-      location: location || 'London, UK',
-      status: 'draft',
-      created_at: new Date().toISOString(),
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.status}`)
     }
 
-    return NextResponse.json({ project: fullProject })
+    const completion = await response.json()
+    console.log('DeepSeek response:', completion)
+    
+    let projectData
+    try {
+      let content = completion.choices?.[0]?.message?.content || '{}'
+      console.log('Raw content:', content)
+      
+      // Clean up markdown code blocks if present
+      content = content.replace(/```json\s*/, '').replace(/\s*```$/, '').trim()
+      
+      console.log('Cleaned content:', content)
+      projectData = JSON.parse(content)
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      console.error('Raw content:', completion.choices?.[0]?.message?.content)
+      throw new Error('Failed to parse AI response')
+    }
+
+    // Save project to database
+    const { data: savedProject, error: projectError } = await supabaseAdmin
+      .from('showbizy_projects')
+      .insert([{
+        title: projectData.title,
+        stream: projectData.stream,
+        genre: projectData.genre,
+        location: location || 'London, UK',
+        logline: projectData.logline,
+        description: projectData.description,
+        brief: projectData.description, // Use description as brief for now
+        mood_style: projectData.mood_style,
+        timeline: typeof projectData.timeline === 'object' ? JSON.stringify(projectData.timeline) : projectData.timeline,
+        deliverables: projectData.deliverables || [],
+        status: 'recruiting',
+        team_size: projectData.roles_needed?.length || 5,
+        filled_roles: 0,
+        generated_by: 'ai'
+      }])
+      .select()
+      .single()
+
+    if (projectError) {
+      console.error('Error saving project:', projectError)
+      // Return the generated project even if database save fails
+      const fallbackProject = {
+        id: `temp_${Date.now()}`,
+        ...projectData,
+        location: location || 'London, UK',
+        status: 'draft',
+        created_at: new Date().toISOString(),
+        teamSize: projectData.roles_needed?.length || 5,
+        filledRoles: 0,
+        roles: projectData.roles_needed?.map((role: any) => ({
+          role: role.role,
+          description: role.description,
+          filled: false
+        })) || []
+      }
+      
+      return NextResponse.json({ 
+        project: fallbackProject,
+        warning: 'Project generated but not saved to database (tables do not exist yet)'
+      })
+    }
+
+    // Save project roles
+    if (projectData.roles_needed && savedProject) {
+      const roles = projectData.roles_needed.map((role: any) => ({
+        project_id: savedProject.id,
+        role: role.role,
+        description: role.description,
+        skills_required: role.skills_required || [],
+        filled: false
+      }))
+
+      const { error: rolesError } = await supabaseAdmin
+        .from('showbizy_project_roles')
+        .insert(roles)
+
+      if (rolesError) {
+        console.error('Error saving project roles:', rolesError)
+      }
+    }
+
+    return NextResponse.json({ project: savedProject })
   } catch (error) {
     console.error('Error generating project:', error)
     return NextResponse.json(
