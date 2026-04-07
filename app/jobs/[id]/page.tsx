@@ -23,12 +23,11 @@ export default function SharedJobPage({ params }: { params: Promise<{ id: string
       try { setUser(JSON.parse(stored)) } catch {}
     }
 
-    // Fetch all jobs and find this one
-    fetch('/api/jobs')
+    // Fetch this specific job by ID
+    fetch(`/api/jobs/${jobId}`)
       .then(r => r.json())
       .then(d => {
-        const found = d.jobs?.find((j: Job) => j.id === jobId)
-        setJob(found || null)
+        setJob(d.job || null)
         setLoading(false)
       })
       .catch(() => setLoading(false))
