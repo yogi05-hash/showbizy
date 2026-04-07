@@ -263,10 +263,7 @@ export default function Home() {
       {/* ─── NAV ─── */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🎬</span>
-          <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            ShowBizy
-          </span>
+          <Image src="/logo.png" alt="ShowBizy" width={140} height={40} style={{ height: 32, width: 'auto' }} unoptimized />
         </div>
         <div className="hidden md:flex items-center gap-6 text-sm">
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
@@ -992,8 +989,7 @@ export default function Home() {
       <footer className="border-t border-white/[0.06] py-10 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🎬</span>
-            <span className="font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ShowBizy</span>
+            <Image src="/logo.png" alt="ShowBizy" width={120} height={36} style={{ height: 28, width: 'auto' }} unoptimized />
           </div>
           <p className="text-white/30 text-sm">
             © 2026 ShowBizy.ai — AI creates the project. You bring the talent.
