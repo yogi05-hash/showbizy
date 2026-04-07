@@ -48,7 +48,7 @@ export default function SignInPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="ShowBizy" style={{ height: 32, width: 'auto' }} />
+          <img src="/logo.png" alt="ShowBizy" style={{ height: 48, width: 'auto' }} />
         </Link>
         <Link href="/signup" className="text-sm text-white/50 hover:text-white transition">
           Create account →

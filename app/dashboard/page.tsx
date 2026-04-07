@@ -156,7 +156,7 @@ function DashboardPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 sticky top-0 z-50 bg-[#030712]/90 backdrop-blur-xl">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <img src="/logo.png" alt="ShowBizy" style={{ height: 32, width: 'auto' }} />
+          <img src="/logo.png" alt="ShowBizy" style={{ height: 48, width: 'auto' }} />
         </Link>
         <div className="flex items-center gap-6 text-sm">
           <Link href="/dashboard" className="text-white font-medium">Dashboard</Link>

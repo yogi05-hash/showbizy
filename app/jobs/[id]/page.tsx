@@ -99,7 +99,7 @@ export default function SharedJobPage({ params }: { params: Promise<{ id: string
       <nav className="fixed top-0 inset-x-0 z-50 bg-[#020617]/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="ShowBizy" style={{ height: 30, width: 'auto' }} />
+            <img src="/logo.png" alt="ShowBizy" style={{ height: 44, width: 'auto' }} />
           </Link>
           <div className="flex items-center gap-4 text-sm">
             <Link href="/jobs" className="text-white/50 hover:text-white transition">← All Jobs</Link>
@@ -264,7 +264,7 @@ export default function SharedJobPage({ params }: { params: Promise<{ id: string
         <div className="mt-12 pt-8 border-t border-white/[0.06] text-center">
           <p className="text-white/30 text-xs mb-2">Powered by</p>
           <Link href="/" className="inline-flex items-center gap-2">
-            <img src="/logo.png" alt="ShowBizy" style={{ height: 24, width: 'auto' }} />
+            <img src="/logo.png" alt="ShowBizy" style={{ height: 36, width: 'auto' }} />
           </Link>
           <p className="text-white/20 text-xs mt-2">AI creates the project. You bring the talent.</p>
         </div>

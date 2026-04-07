@@ -130,7 +130,7 @@ export default function JobsPage() {
       <nav className="fixed top-0 inset-x-0 z-50 bg-[#020617]/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="ShowBizy" style={{ height: 30, width: 'auto' }} />
+            <img src="/logo.png" alt="ShowBizy" style={{ height: 44, width: 'auto' }} />
           </Link>
           <div className="flex items-center gap-6 text-sm">
             <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
