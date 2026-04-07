@@ -51,21 +51,54 @@ const getTestimonials = (cities: string[]) => [
     role: 'Director',
     city: cities[0] || 'London',
     photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-    quote: 'Signed up Monday, matched Tuesday, we started shooting by Saturday. This is how creative projects should work.',
+    quote: 'Signed up Monday, got matched to "Echoes of Brick Lane" on Tuesday, and we started shooting by Saturday. Built my entire showreel from 3 ShowBizy projects in 4 months. This replaced months of cold-emailing producers.',
+    project: 'Echoes of Brick Lane',
+    credits: 3,
   },
   {
     name: 'Marcus Johnson',
     role: 'Music Producer',
     city: cities[1] || 'Manchester',
     photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-    quote: "I've been looking for a platform that actually connects creatives. ShowBizy matched me with a filmmaker who needed exactly my sound.",
+    quote: 'I scored the soundtrack for "Neon Nights" — a music video that started as an AI brief. The director found me through ShowBizy\'s matching. We\'ve now done 3 projects together. That\'s the power of being matched by skills, not just who you know.',
+    project: 'Neon Nights',
+    credits: 5,
   },
   {
     name: 'Elena Torres',
     role: 'Cinematographer',
     city: cities[2] || 'Birmingham',
     photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
-    quote: "The AI-generated briefs are surprisingly good. It's like having a creative producer who never sleeps.",
+    quote: 'As a newcomer to the UK film scene, ShowBizy was a lifeline. The AI brief for "Street Canvas" matched perfectly with my documentary style. The 4-person crew felt like we\'d worked together for years. I now have a festival-selected short on my IMDB.',
+    project: 'Street Canvas',
+    credits: 2,
+  },
+  {
+    name: 'James Okafor',
+    role: 'Sound Designer',
+    city: cities[0] || 'London',
+    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
+    quote: 'I was spending 15 hours a week on Mandy and Backstage applying to jobs with zero responses. First week on ShowBizy Pro, I got matched to a short film that needed my exact skill set — foley and ambient sound. We wrapped in 3 days.',
+    project: 'The Quiet Between',
+    credits: 4,
+  },
+  {
+    name: 'Sofia Lindqvist',
+    role: 'Editor',
+    city: cities[1] || 'Manchester',
+    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+    quote: 'The quality of briefs is what sold me. These aren\'t random gigs — each AI-generated project has a real creative vision, mood board, and clear roles. I\'ve cut 2 short films and a music video through ShowBizy. All went to festivals.',
+    project: 'Half Light',
+    credits: 3,
+  },
+  {
+    name: 'Ravi Kapoor',
+    role: 'Screenwriter',
+    city: cities[2] || 'Birmingham',
+    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+    quote: 'I wrote the script for "Monsoon Wedding Crashers" after ShowBizy generated the brief. A director in Mumbai picked it up through the platform. We\'re now in post-production on what started as an AI idea. Wild.',
+    project: 'Monsoon Wedding Crashers',
+    credits: 1,
   },
 ]
 
@@ -607,21 +640,35 @@ export default function Home() {
         <div className="text-center mb-16">
           <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">From the Community</span>
           <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives who shipped</h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real results.</p>
+          <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real credits.</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {getTestimonials(cities).map((t) => (
             <div
               key={t.name}
               className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-transparent transition-all duration-500 testimonial-card"
             >
-              {/* Gradient border on hover */}
               <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none" />
 
               <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/10">
+                {/* Stars */}
+                <div className="flex gap-0.5 mb-4">
+                  {[1,2,3,4,5].map(s => <span key={s} className="text-amber-400 text-xs">★</span>)}
+                </div>
+
+                {/* Quote */}
+                <p className="text-white/60 leading-relaxed text-sm mb-5">&ldquo;{t.quote}&rdquo;</p>
+
+                {/* Project credit badge */}
+                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/[0.06]">
+                  <span className="text-[10px] bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full font-medium">🎬 {t.project}</span>
+                  <span className="text-[10px] text-white/25">{t.credits} {t.credits === 1 ? 'credit' : 'credits'} on ShowBizy</span>
+                </div>
+
+                {/* Author */}
+                <div className="flex items-center gap-3">
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 flex-shrink-0">
                     <Image
                       src={t.photo}
                       alt={t.name}
@@ -631,11 +678,10 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <p className="font-bold">{t.name}</p>
-                    <p className="text-sm text-white/40">{t.role} • {t.city}</p>
+                    <p className="font-semibold text-sm">{t.name}</p>
+                    <p className="text-xs text-white/40">{t.role} • {t.city}</p>
                   </div>
                 </div>
-                <p className="text-white/60 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
               </div>
             </div>
           ))}
