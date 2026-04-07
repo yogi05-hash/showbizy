@@ -51,8 +51,8 @@ export async function GET(req: Request) {
       genre: project.genre,
       location: project.location,
       timeline: formatTimeline(project.timeline),
-      description: project.description,
-      brief: project.brief || project.description,
+      description: cleanText(project.description),
+      brief: cleanText(project.brief || project.description),
       roles: project.showbizy_project_roles?.map((role: any) => ({
         role: role.role,
         description: role.description,
@@ -133,6 +133,18 @@ export async function POST(req: Request) {
 }
 
 // Helper function to get stream icon
+// Strip embedded JSON objects from text fields (AI sometimes dumps JSON into description)
+function cleanText(text: string | null | undefined): string {
+  if (!text) return ''
+  // Remove JSON objects like {"total_weeks":14,"phases":[...]}
+  let cleaned = text.replace(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '').trim()
+  // Remove leftover artifacts
+  cleaned = cleaned.replace(/\s*•\s*$/, '').replace(/^\s*•\s*/, '').trim()
+  // Collapse multiple spaces/newlines
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim()
+  return cleaned
+}
+
 function formatTimeline(timeline: string): string {
   try {
     if (typeof timeline === 'string' && timeline.startsWith('{')) {

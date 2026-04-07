@@ -44,8 +44,8 @@ export async function GET(
       genre: project.genre,
       location: project.location,
       timeline: formatTimeline(project.timeline),
-      description: project.description,
-      brief: project.brief || project.description,
+      description: cleanText(project.description),
+      brief: cleanText(project.brief || project.description),
       roles: project.showbizy_project_roles?.map((role: any) => ({
         id: role.id,
         role: role.role,
@@ -154,6 +154,15 @@ export async function POST(
     console.error('Project POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+// Strip embedded JSON objects from text fields
+function cleanText(text: string | null | undefined): string {
+  if (!text) return ''
+  let cleaned = text.replace(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '').trim()
+  cleaned = cleaned.replace(/\s*•\s*$/, '').replace(/^\s*•\s*/, '').trim()
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim()
+  return cleaned
 }
 
 // Helper function to format timeline JSON into readable string
