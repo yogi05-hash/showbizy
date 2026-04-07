@@ -203,6 +203,60 @@ export default function Home() {
             margin-top: 2rem;
           }
         }
+
+        /* Spotlight beam animations — slow sweeping */
+        @keyframes spotlight-sweep-1 {
+          0%, 100% { transform: rotate(-15deg); }
+          50% { transform: rotate(10deg); }
+        }
+        @keyframes spotlight-sweep-2 {
+          0%, 100% { transform: rotate(12deg); }
+          50% { transform: rotate(-8deg); }
+        }
+        @keyframes spotlight-sweep-3 {
+          0%, 100% { transform: rotate(-5deg); }
+          50% { transform: rotate(5deg); }
+        }
+        .hero-spotlight-1 { animation: spotlight-sweep-1 12s ease-in-out infinite; }
+        .hero-spotlight-2 { animation: spotlight-sweep-2 15s ease-in-out infinite; }
+        .hero-spotlight-3 { animation: spotlight-sweep-3 18s ease-in-out infinite; }
+
+        /* Floating project cards — gentle drift */
+        @keyframes hero-float-a {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
+          50% { transform: translateY(-20px) rotate(1deg); }
+        }
+        @keyframes hero-float-b {
+          0%, 100% { transform: translateY(0) rotate(2deg); }
+          50% { transform: translateY(-15px) rotate(-1deg); }
+        }
+        @keyframes hero-float-c {
+          0%, 100% { transform: translateY(0) rotate(1deg); }
+          50% { transform: translateY(-25px) rotate(-2deg); }
+        }
+        @keyframes hero-float-d {
+          0%, 100% { transform: translateY(0) rotate(-1deg); }
+          50% { transform: translateY(-18px) rotate(2deg); }
+        }
+        .hero-float-1 { animation: hero-float-a 8s ease-in-out infinite; }
+        .hero-float-2 { animation: hero-float-b 10s ease-in-out infinite 1s; }
+        .hero-float-3 { animation: hero-float-c 9s ease-in-out infinite 0.5s; }
+        .hero-float-4 { animation: hero-float-d 11s ease-in-out infinite 2s; }
+
+        /* Title entrance */
+        @keyframes hero-title-enter {
+          from { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+          to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        .hero-title-1 { animation: hero-title-enter 1s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+        .hero-title-2 { animation: hero-title-enter 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards; opacity: 0; }
+
+        /* General fade in */
+        @keyframes hero-fade {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .hero-fade-in { animation: hero-fade 0.8s ease forwards; opacity: 0; animation-delay: 0.4s; }
       `}</style>
       {/* ─── NAV ─── */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
@@ -239,75 +293,118 @@ export default function Home() {
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Cinematic background layers */}
-        {/* Spotlight from top */}
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[800px] bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
-        {/* Side accent lights */}
-        <div className="absolute top-1/3 left-[-5%] w-[300px] h-[500px] bg-gradient-to-r from-purple-600/10 to-transparent rounded-full blur-[80px] pointer-events-none" />
-        <div className="absolute top-1/4 right-[-5%] w-[300px] h-[500px] bg-gradient-to-l from-pink-600/8 to-transparent rounded-full blur-[80px] pointer-events-none" />
-        {/* Film grain overlay */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")', backgroundSize: '128px' }} />
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Animated rotating spotlight beams */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="hero-spotlight-1 absolute top-[-30%] left-[20%] w-[200px] h-[140vh] bg-gradient-to-b from-amber-400/[0.07] via-amber-400/[0.02] to-transparent origin-top" />
+          <div className="hero-spotlight-2 absolute top-[-30%] right-[25%] w-[180px] h-[130vh] bg-gradient-to-b from-purple-400/[0.05] via-purple-400/[0.015] to-transparent origin-top" />
+          <div className="hero-spotlight-3 absolute top-[-30%] left-[50%] w-[250px] h-[150vh] bg-gradient-to-b from-white/[0.03] via-white/[0.01] to-transparent origin-top" />
+        </div>
 
-        {/* Floating cinematic elements */}
-        <div className="absolute top-[15%] left-[8%] text-4xl opacity-10 animate-pulse" style={{ animationDuration: '4s' }}>🎬</div>
-        <div className="absolute top-[25%] right-[12%] text-3xl opacity-8 animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }}>🎵</div>
-        <div className="absolute bottom-[25%] left-[15%] text-3xl opacity-8 animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }}>📷</div>
-        <div className="absolute bottom-[20%] right-[8%] text-4xl opacity-10 animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '0.5s' }}>🎭</div>
-        <div className="absolute top-[60%] left-[5%] text-2xl opacity-5 animate-pulse" style={{ animationDuration: '7s', animationDelay: '3s' }}>✂️</div>
-        <div className="absolute top-[10%] right-[25%] text-2xl opacity-5 animate-pulse" style={{ animationDuration: '5.5s', animationDelay: '1.5s' }}>🎤</div>
+        {/* Radial glow behind text */}
+        <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.08] rounded-full blur-[150px] pointer-events-none" />
 
-        {/* Horizontal film strip lines */}
-        <div className="absolute top-[20%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent pointer-events-none" />
-        <div className="absolute bottom-[25%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/8 to-transparent pointer-events-none" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-28 text-center">
-          {/* Live badge */}
-          <div className="inline-flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-5 py-2.5 mb-10 backdrop-blur-sm">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
-            </span>
-            <span className="text-sm font-semibold text-amber-200/80 tracking-wide">Now Live in {location.city}</span>
+        {/* Floating project poster cards in background */}
+        <div className="absolute inset-0 pointer-events-none hidden lg:block">
+          {/* Left side floating cards */}
+          <div className="hero-float-1 absolute top-[18%] left-[3%] w-[160px] h-[220px] rounded-2xl overflow-hidden border border-white/[0.06] opacity-[0.15] hover:opacity-30 transition-opacity">
+            <Image src="https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300" alt="" fill className="object-cover" unoptimized />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute bottom-3 left-3 right-3">
+              <p className="text-[10px] font-bold text-white/80">The Last Bookstore</p>
+              <p className="text-[8px] text-white/40">Short Film • London</p>
+            </div>
+          </div>
+          <div className="hero-float-2 absolute bottom-[22%] left-[5%] w-[140px] h-[190px] rounded-2xl overflow-hidden border border-white/[0.06] opacity-[0.12]">
+            <Image src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=300" alt="" fill className="object-cover" unoptimized />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute bottom-3 left-3 right-3">
+              <p className="text-[10px] font-bold text-white/80">Neon Nights</p>
+              <p className="text-[8px] text-white/40">Music Video • Manchester</p>
+            </div>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold leading-[1.02] mb-7 tracking-[-0.03em]">
-            <span className="text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.1)]">AI creates the project.</span>
-            <br />
-            <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_60px_rgba(245,183,49,0.3)]">
+          {/* Right side floating cards */}
+          <div className="hero-float-3 absolute top-[22%] right-[4%] w-[150px] h-[200px] rounded-2xl overflow-hidden border border-white/[0.06] opacity-[0.13]">
+            <Image src="https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=300" alt="" fill className="object-cover" unoptimized />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute bottom-3 left-3 right-3">
+              <p className="text-[10px] font-bold text-white/80">Street Canvas</p>
+              <p className="text-[8px] text-white/40">Documentary • Birmingham</p>
+            </div>
+          </div>
+          <div className="hero-float-4 absolute bottom-[18%] right-[6%] w-[145px] h-[195px] rounded-2xl overflow-hidden border border-white/[0.06] opacity-[0.11]">
+            <Image src="https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=300" alt="" fill className="object-cover" unoptimized />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute bottom-3 left-3 right-3">
+              <p className="text-[10px] font-bold text-white/80">Echoes of Brick Lane</p>
+              <p className="text-[8px] text-white/40">Documentary • London</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Film grain overlay */}
+        <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundSize: '128px' }} />
+
+        <div className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-32 text-center">
+          {/* Live badge */}
+          <div className="hero-fade-in inline-flex items-center gap-2.5 bg-white/[0.04] border border-white/[0.08] rounded-full px-5 py-2.5 mb-10 backdrop-blur-md">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+            </span>
+            <span className="text-xs font-medium text-white/50 tracking-widest uppercase">Live in {location.city}</span>
+          </div>
+
+          {/* Main headline with stagger animation */}
+          <h1 className="hero-title-1 text-5xl sm:text-6xl md:text-7xl lg:text-[5.8rem] font-extrabold leading-[0.95] mb-3 tracking-[-0.04em]">
+            <span className="text-white">AI creates the project.</span>
+          </h1>
+          <h1 className="hero-title-2 text-5xl sm:text-6xl md:text-7xl lg:text-[5.8rem] font-extrabold leading-[0.95] mb-8 tracking-[-0.04em]">
+            <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-orange-500 bg-clip-text text-transparent">
               You bring the talent.
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-white/45 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
-            ShowBizy generates creative briefs and assembles local teams of film, music, and entertainment professionals to bring them to life.
+          <p className="hero-fade-in text-lg sm:text-xl text-white/40 max-w-xl mx-auto mb-12 leading-relaxed font-light" style={{ animationDelay: '0.6s' }}>
+            AI generates creative briefs and matches local teams of film, music &amp; entertainment pros to bring them to life.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+          <div className="hero-fade-in flex flex-col sm:flex-row gap-4 justify-center" style={{ animationDelay: '0.8s' }}>
             <Link
               href="/signup"
-              className="bg-gradient-to-r from-amber-500 to-orange-600 px-9 py-4 rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-amber-500/25 whitespace-nowrap text-center text-black"
+              className="group relative bg-gradient-to-r from-amber-400 to-orange-500 px-10 py-4 rounded-xl font-bold hover:shadow-[0_0_40px_rgba(245,183,49,0.3)] transition-all duration-300 text-black text-center overflow-hidden"
             >
-              Get Started Free →
+              <span className="relative z-10">Get Started Free →</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-300 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
             <Link
               href="/pricing"
-              className="bg-white/[0.06] border border-white/[0.12] px-9 py-4 rounded-xl font-bold hover:bg-white/10 hover:border-white/20 transition whitespace-nowrap text-center backdrop-blur-sm"
+              className="bg-white/[0.04] border border-white/[0.1] px-10 py-4 rounded-xl font-bold hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 text-center backdrop-blur-sm"
             >
               See Pricing
             </Link>
           </div>
 
-          {/* Trust indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-14 text-xs text-white/25">
-            <span className="flex items-center gap-1.5">⭐ 4.9/5 from 500+ creatives</span>
-            <span className="hidden sm:inline text-white/10">|</span>
-            <span className="flex items-center gap-1.5">🎬 120+ projects generated</span>
-            <span className="hidden sm:inline text-white/10">|</span>
-            <span className="flex items-center gap-1.5">🌍 Live in 3 cities</span>
+          {/* Trust row */}
+          <div className="hero-fade-in flex flex-wrap items-center justify-center gap-8 mt-16" style={{ animationDelay: '1s' }}>
+            {[
+              { num: '500+', label: 'Creatives' },
+              { num: '120+', label: 'Projects' },
+              { num: '4.9★', label: 'Rating' },
+              { num: '3', label: 'Cities' },
+            ].map(s => (
+              <div key={s.label} className="text-center">
+                <div className="text-lg font-bold text-white/70">{s.num}</div>
+                <div className="text-[10px] text-white/25 uppercase tracking-widest">{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent pointer-events-none" />
       </section>
 
       {/* ─── ACTIVITY TICKER ─── */}
