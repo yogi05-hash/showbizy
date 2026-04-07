@@ -50,7 +50,7 @@ export async function GET(req: Request) {
       streamIcon: getStreamIcon(project.stream),
       genre: project.genre,
       location: project.location,
-      timeline: project.timeline,
+      timeline: formatTimeline(project.timeline),
       description: project.description,
       brief: project.brief || project.description,
       roles: project.showbizy_project_roles?.map((role: any) => ({
@@ -133,6 +133,25 @@ export async function POST(req: Request) {
 }
 
 // Helper function to get stream icon
+function formatTimeline(timeline: string): string {
+  try {
+    if (typeof timeline === 'string' && timeline.startsWith('{')) {
+      const data = JSON.parse(timeline)
+      if (data.total_weeks) return `${data.total_weeks} weeks`
+      if (data.phases && Array.isArray(data.phases)) {
+        const totalWeeks = data.phases.reduce((sum: number, p: { duration?: string }) => {
+          const match = p.duration?.match(/(\d+)/)
+          return sum + (match ? parseInt(match[1]) : 0)
+        }, 0)
+        return totalWeeks > 0 ? `${totalWeeks} weeks` : 'TBD'
+      }
+    }
+    return timeline || 'TBD'
+  } catch {
+    return timeline || 'TBD'
+  }
+}
+
 function getStreamIcon(stream: string): string {
   const icons: { [key: string]: string } = {
     'Film & Video': '🎬',
