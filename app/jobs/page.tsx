@@ -315,22 +315,24 @@ export default function JobsPage() {
                     >
                       📤 Share this job
                     </button>
-                    <a
-                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${selectedJob.title} at ${selectedJob.company} — apply on ShowBizy`)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://showbizy.ai'}/jobs/${selectedJob.id}`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        const jobUrl = `https://showbizy.ai/jobs/${selectedJob.id}`
+                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${selectedJob.title} at ${selectedJob.company} — apply on ShowBizy`)}&url=${encodeURIComponent(jobUrl)}`, '_blank')
+                      }}
                       className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
                     >
                       𝕏
-                    </a>
-                    <a
-                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://showbizy.ai'}/jobs/${selectedJob.id}`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    </button>
+                    <button
+                      onClick={() => {
+                        const jobUrl = `https://showbizy.ai/jobs/${selectedJob.id}`
+                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(jobUrl)}`, '_blank')
+                      }}
                       className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
                     >
                       in
-                    </a>
+                    </button>
                   </div>
 
                   {appliedJobs.includes(selectedJob.id) ? (
