@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { detectLocation, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
+import { FadeIn, StaggerContainer, StaggerItem, TiltCard, AnimatedCounter } from '@/components/MotionWrap'
+import { motion } from 'motion/react'
 
 /* ─── DATA ─── */
 const getFeaturedProjects = (cities: string[]) => [
@@ -408,7 +410,7 @@ export default function Home() {
       </section>
 
       {/* ─── ACTIVITY TICKER ─── */}
-      <div className="relative border-t border-b border-white/5 bg-white/[0.02] overflow-hidden py-3">
+      <div className="relative border-t border-b border-white/5 bg-white/[0.02] overflow-hidden py-3" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
         <div className="ticker-track flex whitespace-nowrap">
           {[...getTickerItems(location, cities), ...getTickerItems(location, cities)].map((item, i) => (
             <span key={i} className="inline-block px-8 text-sm text-white/40">
@@ -420,13 +422,15 @@ export default function Home() {
 
       {/* ─── FEATURED PROJECTS ─── */}
       <section id="projects" className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Live Projects</span>
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Happening right now</h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">Real creative projects with real teams. Every one started as an AI-generated brief.</p>
-        </div>
+        <FadeIn>
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Live Projects</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Happening right now</h2>
+            <p className="text-white/50 text-lg max-w-xl mx-auto">Real creative projects with real teams. Every one started as an AI-generated brief.</p>
+          </div>
+        </FadeIn>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <StaggerContainer className="grid md:grid-cols-3 gap-6" stagger={0.15}>
           {(liveProjects.length > 0 ? liveProjects.map((project) => {
             const statusStyles: Record<string, string> = {
               recruiting: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
@@ -526,7 +530,7 @@ export default function Home() {
               </div>
             </div>
           )))}
-        </div>
+        </StaggerContainer>
       </section>
 
       {/* ─── HOW IT ACTUALLY WORKS ─── */}
@@ -534,11 +538,13 @@ export default function Home() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">How it actually works</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">From AI brief to real production</h2>
-            <p className="text-white/50 text-lg max-w-xl mx-auto">Four steps. No gatekeepers. No endless applications.</p>
-          </div>
+          <FadeIn>
+            <div className="text-center mb-16">
+              <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">How it actually works</span>
+              <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">From AI brief to real production</h2>
+              <p className="text-white/50 text-lg max-w-xl mx-auto">Four steps. No gatekeepers. No endless applications.</p>
+            </div>
+          </FadeIn>
 
           <div className="flex flex-col lg:flex-row gap-12 items-center">
             {/* Steps */}
@@ -698,10 +704,12 @@ export default function Home() {
 
       {/* ─── AI LIVE SECTION ─── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-12">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">AI in Action</span>
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Watch the AI create</h2>
-        </div>
+        <FadeIn>
+          <div className="text-center mb-12">
+            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">AI in Action</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Watch the AI create</h2>
+          </div>
+        </FadeIn>
 
         <div className="max-w-2xl mx-auto">
           <div className="relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 md:p-8 hover:border-purple-500/20 transition-all duration-300">
@@ -764,17 +772,20 @@ export default function Home() {
 
       {/* ─── TESTIMONIALS ─── */}
       <section id="creatives" className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">From the Community</span>
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives who shipped</h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real credits.</p>
-        </div>
+        <FadeIn>
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">From the Community</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives who shipped</h2>
+            <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real credits.</p>
+          </div>
+        </FadeIn>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.1}>
           {getTestimonials(cities).map((t) => (
-            <div
-              key={t.name}
+            <StaggerItem key={t.name}>
+            <TiltCard
               className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-transparent transition-all duration-500 testimonial-card"
+              maxTilt={3}
             >
               <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none" />
 
@@ -810,25 +821,28 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
+            </TiltCard>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </section>
 
       {/* ─── INDUSTRY JOBS ─── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
-          <div>
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">🔥 Industry Jobs</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-3">Real entertainment jobs</h2>
-            <p className="text-white/50 text-lg max-w-lg">Live opportunities from BBC, Netflix, Channel 4, Framestore, and more. Pro members get full access.</p>
-          </div>
+        <FadeIn>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
+            <div>
+              <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">🔥 Industry Jobs</span>
+              <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-3">Real entertainment jobs</h2>
+              <p className="text-white/50 text-lg max-w-lg">Live opportunities from BBC, Netflix, Channel 4, Framestore, and more. Pro members get full access.</p>
+            </div>
           <Link href="/jobs" className="text-purple-400 hover:text-purple-300 font-medium transition text-sm flex items-center gap-1">
             View all jobs →
           </Link>
         </div>
+        </FadeIn>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-4" stagger={0.08}>
           {featuredJobs.length === 0 ? (
             // Loading skeleton
             Array.from({ length: 6 }).map((_, i) => (
@@ -870,13 +884,15 @@ export default function Home() {
               </Link>
             )
           })}
-        </div>
+        </StaggerContainer>
 
-        <div className="text-center mt-8">
-          <Link href="/jobs" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition shadow-lg shadow-purple-500/25">
-            View All Jobs →
-          </Link>
-        </div>
+        <FadeIn delay={0.3}>
+          <div className="text-center mt-8">
+            <Link href="/jobs" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition shadow-lg shadow-purple-500/25">
+              View All Jobs →
+            </Link>
+          </div>
+        </FadeIn>
       </section>
 
       {/* ─── PRICING TEASER ─── */}
@@ -890,6 +906,7 @@ export default function Home() {
       </section>
 
       {/* ─── JOIN NOW CTA ─── */}
+      <FadeIn>
       <section className="max-w-4xl mx-auto px-6 py-24 text-center">
         <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 border border-purple-500/20 rounded-3xl p-12 overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -908,6 +925,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </FadeIn>
 
       {/* ─── FAQ ─── */}
       <section className="max-w-3xl mx-auto px-6 py-24">
