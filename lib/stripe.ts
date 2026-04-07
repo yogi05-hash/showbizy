@@ -12,3 +12,4 @@ function getStripeClient() {
 
 export const stripe = getStripeClient()
 // Stripe: £9/month Pro plan
+// test price
