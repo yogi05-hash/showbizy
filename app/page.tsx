@@ -124,6 +124,7 @@ export default function Home() {
     currency: { code: 'GBP' as const, symbol: '£' }
   })
   const [cities, setCities] = useState(['London', 'Manchester', 'Birmingham'])
+  const [featuredJobs, setFeaturedJobs] = useState<{id:string;title:string;company:string;location:string;salary:string;category:string;type:string;posted:string}[]>([])
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
@@ -135,6 +136,12 @@ export default function Home() {
     
     const detectedCities = getCitiesForLocation(detectedLocation)
     setCities(detectedCities)
+
+    // Fetch featured jobs from API
+    fetch('/api/jobs')
+      .then(r => r.json())
+      .then(d => { if (d.jobs) setFeaturedJobs(d.jobs.slice(0, 6)) })
+      .catch(() => {})
   }, [])
 
   return (
@@ -590,14 +597,16 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { id: 'j1', title: 'Cinematographer — Feature Film', company: 'Vertigo Productions', location: 'London', salary: '£350-500/day', category: 'Film', type: 'Freelance', posted: '2h ago' },
-            { id: 'j3', title: 'Senior Video Editor', company: 'BBC Studios', location: 'London', salary: '£45-55K/year', category: 'TV', type: 'Full-time', posted: '1d ago' },
-            { id: 'j2', title: 'Music Video Director', company: 'Neon Records', location: 'Manchester', salary: '£2-4K/project', category: 'Music', type: 'Freelance', posted: '5h ago' },
-            { id: 'j6', title: 'VFX Artist — Sci-Fi Series', company: 'Framestore', location: 'London', salary: '£55-70K/year', category: 'Film', type: 'Full-time', posted: '1d ago' },
-            { id: 'j10', title: 'Production Coordinator', company: 'Netflix UK', location: 'London', salary: '£35-42K/year', category: 'TV', type: 'Contract', posted: '2d ago' },
-            { id: 'j7', title: 'Podcast Producer', company: 'Spotify Studios', location: 'London', salary: '£40-50K/year', category: 'Music', type: 'Full-time', posted: '4h ago' },
-          ].map((job) => {
+          {featuredJobs.length === 0 ? (
+            // Loading skeleton
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 animate-pulse">
+                <div className="h-4 bg-white/10 rounded w-2/3 mb-2" />
+                <div className="h-3 bg-white/5 rounded w-1/3 mb-4" />
+                <div className="flex gap-3"><div className="h-3 bg-white/5 rounded w-16" /><div className="h-3 bg-white/5 rounded w-20" /></div>
+              </div>
+            ))
+          ) : featuredJobs.map((job) => {
             const catColor: Record<string, string> = {
               Film: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
               TV: 'bg-blue-400/20 text-blue-300 border-blue-400/30',
@@ -633,7 +642,7 @@ export default function Home() {
 
         <div className="text-center mt-8">
           <Link href="/jobs" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition shadow-lg shadow-purple-500/25">
-            View All 12+ Jobs →
+            View All Jobs →
           </Link>
         </div>
       </section>

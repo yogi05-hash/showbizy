@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { MOCK_JOBS, JOB_CATEGORIES, JOB_LOCATIONS, type Job } from '@/lib/jobs-data'
+import { JOB_CATEGORIES, JOB_LOCATIONS, type Job } from '@/lib/jobs-data'
 
 export default function JobsPage() {
   const [user, setUser] = useState<{ id: string; name: string; email: string; is_pro: boolean } | null>(null)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [jobsLoading, setJobsLoading] = useState(true)
   const [category, setCategory] = useState('All')
   const [location, setLocation] = useState('All UK')
   const [search, setSearch] = useState('')
@@ -16,6 +18,15 @@ export default function JobsPage() {
   const [applied, setApplied] = useState(false)
   const [appliedJobs, setAppliedJobs] = useState<string[]>([])
 
+  // Fetch jobs from API
+  useEffect(() => {
+    setJobsLoading(true)
+    fetch('/api/jobs')
+      .then(r => r.json())
+      .then(d => { if (d.jobs) setJobs(d.jobs); setJobsLoading(false) })
+      .catch(() => setJobsLoading(false))
+  }, [])
+
   useEffect(() => {
     // Check if user is logged in
     const stored = localStorage.getItem('showbizy_user')
@@ -23,7 +34,6 @@ export default function JobsPage() {
       try {
         const u = JSON.parse(stored)
         setUser(u)
-        // Fetch applied jobs
         fetch(`/api/jobs/apply?user_id=${u.id}`)
           .then(r => r.json())
           .then(d => {
@@ -36,7 +46,7 @@ export default function JobsPage() {
 
   const isPro = user?.is_pro === true
 
-  const filtered = MOCK_JOBS.filter(j => {
+  const filtered = jobs.filter(j => {
     if (category !== 'All' && j.category !== category) return false
     if (location !== 'All UK' && !j.location.toLowerCase().includes(location.toLowerCase())) return false
     if (search && !j.title.toLowerCase().includes(search.toLowerCase()) && !j.company.toLowerCase().includes(search.toLowerCase())) return false
@@ -210,7 +220,23 @@ export default function JobsPage() {
               )
             })}
 
-            {filtered.length === 0 && (
+            {jobsLoading && (
+              <div className="space-y-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 animate-pulse">
+                    <div className="h-4 bg-white/10 rounded w-2/3 mb-3" />
+                    <div className="h-3 bg-white/5 rounded w-1/3 mb-4" />
+                    <div className="flex gap-4">
+                      <div className="h-3 bg-white/5 rounded w-20" />
+                      <div className="h-3 bg-white/5 rounded w-24" />
+                      <div className="h-3 bg-white/5 rounded w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!jobsLoading && filtered.length === 0 && (
               <div className="text-center py-16 text-white/30">No jobs found matching your filters.</div>
             )}
           </div>
