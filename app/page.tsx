@@ -308,7 +308,7 @@ export default function Home() {
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>
           <Link href="#creatives" className="text-white/50 hover:text-white transition">Creatives</Link>
-          <Link href="/jobs" className="text-purple-400 hover:text-purple-300 transition font-medium">Jobs</Link>
+          <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
           <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
         </div>
         <div className="flex items-center gap-3">
@@ -322,7 +322,7 @@ export default function Home() {
           ) : (
             <>
               <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>
-              <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">
+              <Link href="/signup" className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2 rounded-lg font-semibold text-sm text-black hover:opacity-90 transition">
                 Get Started Free
               </Link>
             </>
@@ -333,11 +333,11 @@ export default function Home() {
       {/* ─── HERO ─── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* 3D Gallery Background */}
-        <div className="absolute inset-0 opacity-30 pointer-events-auto">
+        <div className="absolute inset-0 opacity-60 pointer-events-auto">
           <HeroGallery />
         </div>
         {/* Dark overlay to keep text readable */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#030712]/40 via-[#030712]/60 to-[#030712] pointer-events-none z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030712]/30 via-[#030712]/50 to-[#030712]/90 pointer-events-none z-[1]" />
 
         {/* Animated rotating spotlight beams */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
@@ -467,7 +467,7 @@ export default function Home() {
       <section id="projects" className="max-w-7xl mx-auto px-6 py-24">
         <FadeIn>
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Live Projects</span>
+            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">Live Projects</span>
             <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Happening right now</h2>
             <p className="text-white/50 text-lg max-w-xl mx-auto">Real creative projects with real teams. Every one started as an AI-generated brief.</p>
           </div>
@@ -583,7 +583,7 @@ export default function Home() {
         <div className="relative z-10">
           <FadeIn>
             <div className="text-center mb-16">
-              <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">How it actually works</span>
+              <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">How it actually works</span>
               <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">From AI brief to real production</h2>
               <p className="text-white/50 text-lg max-w-xl mx-auto">Four steps. No gatekeepers. No endless applications.</p>
             </div>
@@ -594,13 +594,13 @@ export default function Home() {
             <div className="grid md:grid-cols-2 gap-6 flex-1">
               {/* Step 1 — AI Brief */}
               <div className="relative group">
-                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 01</div>
+                <div className="text-xs font-mono font-bold text-amber-400 mb-3">STEP 01</div>
                 <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
                   <h3 className="text-lg font-bold mb-3">AI Generates a Brief</h3>
                   <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs space-y-2">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
-                      <span className="text-purple-300 font-semibold">New Brief</span>
+                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+                      <span className="text-amber-300 font-semibold">New Brief</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-white/40">Mood</span>
@@ -624,7 +624,7 @@ export default function Home() {
 
               {/* Step 2 — Matched */}
               <div className="relative group">
-                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 02</div>
+                <div className="text-xs font-mono font-bold text-amber-400 mb-3">STEP 02</div>
                 <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
                   <h3 className="text-lg font-bold mb-3">You Get Matched</h3>
                   <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] text-xs">
@@ -635,7 +635,7 @@ export default function Home() {
                         <p className="text-white/40">Just now</p>
                       </div>
                     </div>
-                    <p className="text-white/60 leading-relaxed">&quot;Neon Nights&quot; needs a <span className="text-purple-300 font-medium">cinematographer</span> in Manchester</p>
+                    <p className="text-white/60 leading-relaxed">&quot;Neon Nights&quot; needs a <span className="text-amber-300 font-medium">cinematographer</span> in Manchester</p>
                     <button className="mt-3 w-full bg-purple-500/20 text-purple-300 py-2 rounded-lg text-xs font-semibold border border-purple-500/20">
                       View Project →
                     </button>
@@ -645,7 +645,7 @@ export default function Home() {
 
               {/* Step 3 — Team */}
               <div className="relative group">
-                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 03</div>
+                <div className="text-xs font-mono font-bold text-amber-400 mb-3">STEP 03</div>
                 <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
                   <h3 className="text-lg font-bold mb-3">Join Your Team</h3>
                   <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
@@ -672,7 +672,7 @@ export default function Home() {
 
               {/* Step 4 — Create */}
               <div className="relative group">
-                <div className="text-xs font-mono font-bold text-purple-400 mb-3">STEP 04</div>
+                <div className="text-xs font-mono font-bold text-amber-400 mb-3">STEP 04</div>
                 <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:border-purple-500/20 transition-all duration-300">
                   <h3 className="text-lg font-bold mb-3">Create Something Real</h3>
                   <div className="bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06]">
@@ -749,7 +749,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 py-24">
         <FadeIn>
           <div className="text-center mb-12">
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">AI in Action</span>
+            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">AI in Action</span>
             <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Watch the AI create</h2>
           </div>
         </FadeIn>
@@ -817,7 +817,7 @@ export default function Home() {
       <section id="creatives" className="max-w-7xl mx-auto px-6 py-24">
         <FadeIn>
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">From the Community</span>
+            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">From the Community</span>
             <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives who shipped</h2>
             <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real credits.</p>
           </div>
@@ -875,11 +875,11 @@ export default function Home() {
         <FadeIn>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
             <div>
-              <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">🔥 Industry Jobs</span>
+              <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">🔥 Industry Jobs</span>
               <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-3">Real entertainment jobs</h2>
               <p className="text-white/50 text-lg max-w-lg">Live opportunities from BBC, Netflix, Channel 4, Framestore, and more. Pro members get full access.</p>
             </div>
-          <Link href="/jobs" className="text-purple-400 hover:text-purple-300 font-medium transition text-sm flex items-center gap-1">
+          <Link href="/jobs" className="text-amber-400 hover:text-amber-300 font-medium transition text-sm flex items-center gap-1">
             View all jobs →
           </Link>
         </div>
@@ -907,7 +907,7 @@ export default function Home() {
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-sm font-bold">{job.title}</h3>
-                      <p className="text-xs text-purple-400 font-medium mt-0.5">{job.company}</p>
+                      <p className="text-xs text-amber-400 font-medium mt-0.5">{job.company}</p>
                     </div>
                     <span className={`text-[10px] border px-2 py-0.5 rounded-full font-medium ${catColor[job.category] || 'bg-white/10 text-white/50 border-white/10'}`}>
                       {job.category}
@@ -931,7 +931,7 @@ export default function Home() {
 
         <FadeIn delay={0.3}>
           <div className="text-center mt-8">
-            <Link href="/jobs" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition shadow-lg shadow-purple-500/25">
+            <Link href="/jobs" className="inline-block bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3.5 rounded-xl font-bold text-sm text-black hover:opacity-90 transition shadow-lg shadow-amber-500/25">
               View All Jobs →
             </Link>
           </div>
@@ -942,7 +942,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center">
           <p className="text-white/40 text-lg mb-4">Plans starting from <span className="text-white font-bold">{formatPrice(PRICING[location.currency.code].free, location.currency.code)}/month</span></p>
-          <Link href="/pricing" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition text-lg">
+          <Link href="/pricing" className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-medium transition text-lg">
             View pricing plans →
           </Link>
         </div>
@@ -959,11 +959,11 @@ export default function Home() {
             <p className="text-white/50 text-lg mb-8 max-w-xl mx-auto">
               Join thousands of creatives already on ShowBizy. Get matched to real projects in your city.
             </p>
-            <Link href="/signup" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg shadow-purple-500/25">
+            <Link href="/signup" className="inline-block bg-gradient-to-r from-amber-500 to-orange-500 px-10 py-4 rounded-xl font-bold text-lg text-black hover:opacity-90 transition shadow-lg shadow-amber-500/25">
               Create Your Free Profile →
             </Link>
             <p className="text-white/40 text-sm mt-4">
-              Pro features from <Link href="/pricing" className="text-purple-400 hover:text-purple-300 font-semibold transition">{formatPrice(PRICING[location.currency.code].pro, location.currency.code)}/month</Link>
+              Pro features from <Link href="/pricing" className="text-amber-400 hover:text-amber-300 font-semibold transition">{formatPrice(PRICING[location.currency.code].pro, location.currency.code)}/month</Link>
             </p>
           </div>
         </div>
@@ -973,7 +973,7 @@ export default function Home() {
       {/* ─── FAQ ─── */}
       <section className="max-w-3xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">FAQ</span>
+          <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">FAQ</span>
           <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Got questions?</h2>
         </div>
         <div className="space-y-4">
@@ -981,14 +981,14 @@ export default function Home() {
             <div
               key={i}
               className={`bg-white/[0.03] border rounded-2xl transition-all duration-300 overflow-hidden ${
-                openFaq === i ? 'border-purple-500/40' : 'border-white/[0.06]'
+                openFaq === i ? 'border-amber-500/40' : 'border-white/[0.06]'
               }`}
             >
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between px-6 py-5 text-left"
               >
-                <span className={`font-semibold text-lg transition-colors ${openFaq === i ? 'text-purple-400' : 'text-white/80'}`}>
+                <span className={`font-semibold text-lg transition-colors ${openFaq === i ? 'text-amber-400' : 'text-white/80'}`}>
                   {item.q}
                 </span>
                 <span
