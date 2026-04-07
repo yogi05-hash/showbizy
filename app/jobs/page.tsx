@@ -55,13 +55,19 @@ export default function JobsPage() {
     return true
   })
 
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+
   const handleJobClick = (job: Job) => {
-    if (!user) return
-    if (!isPro) return
+    if (!user || !isPro) {
+      setShowUpgradePrompt(true)
+      return
+    }
     setSelectedJob(job)
     setShowApply(false)
     setApplied(false)
     setCoverNote('')
+    setResumeFile(null)
+    setApplyError('')
   }
 
   const handleApply = async () => {
@@ -195,7 +201,6 @@ export default function JobsPage() {
           {/* Job List */}
           <div className="space-y-3">
             {filtered.map(job => {
-              const isLocked = !isPro
               const hasApplied = appliedJobs.includes(job.id)
               const isSelected = selectedJob?.id === job.id
 
@@ -203,22 +208,10 @@ export default function JobsPage() {
                 <div
                   key={job.id}
                   onClick={() => handleJobClick(job)}
-                  className={`relative bg-white/[0.03] border rounded-2xl p-5 transition-all duration-300 overflow-hidden ${
+                  className={`relative bg-white/[0.03] border rounded-2xl p-5 transition-all duration-300 overflow-hidden cursor-pointer ${
                     isSelected ? 'border-purple-500/40' : 'border-white/[0.08] hover:border-white/20'
-                  } ${isLocked ? '' : 'cursor-pointer'}`}
+                  }`}
                 >
-                  {/* Lock overlay */}
-                  {isLocked && (
-                    <div className="absolute inset-0 bg-[#020617]/60 backdrop-blur-[3px] z-10 rounded-2xl flex items-center justify-center">
-                      <div className="text-center">
-                        <span className="text-2xl block mb-2">🔒</span>
-                        <p className="text-sm text-white/50">
-                          <Link href="/pricing" className="text-purple-400 hover:text-purple-300 font-medium">Upgrade to Pro</Link> to view &amp; apply
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-base font-bold">{job.title}</h3>
@@ -227,6 +220,9 @@ export default function JobsPage() {
                     <div className="flex items-center gap-2">
                       {hasApplied && (
                         <span className="text-xs bg-green-400/20 text-green-300 border border-green-400/30 px-2.5 py-1 rounded-full font-medium">Applied</span>
+                      )}
+                      {!isPro && (
+                        <span className="text-xs bg-amber-400/10 text-amber-300 border border-amber-400/20 px-2 py-0.5 rounded-full font-medium">🔒 Pro</span>
                       )}
                       <span className={`text-xs border px-2.5 py-1 rounded-full font-medium ${categoryColors[job.category] || 'bg-white/10 text-white/50 border-white/10'}`}>
                         {job.category}
@@ -480,6 +476,41 @@ export default function JobsPage() {
             </div>
           )}
         </div>
+
+        {/* Upgrade Prompt Modal */}
+        {showUpgradePrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowUpgradePrompt(false)}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-[#0d0d1a] border border-white/[0.1] rounded-2xl p-8 max-w-md w-full text-center" onClick={e => e.stopPropagation()}>
+              <span className="text-4xl block mb-4">⚡</span>
+              <h3 className="text-xl font-bold mb-2">Upgrade to Pro</h3>
+              <p className="text-white/50 text-sm mb-6 leading-relaxed">
+                {!user
+                  ? 'Sign up for a free ShowBizy account, then upgrade to Pro to view full job details, apply with your profile, and get matched to opportunities.'
+                  : 'Upgrade to Pro to view full job details, apply with your ShowBizy profile, and get matched to the best opportunities in entertainment.'}
+              </p>
+              <div className="flex flex-col gap-3">
+                {!user ? (
+                  <>
+                    <Link href="/signup" className="w-full bg-gradient-to-r from-amber-400 to-orange-500 py-3 rounded-xl font-bold text-black text-sm hover:opacity-90 transition text-center block">
+                      Sign Up Free →
+                    </Link>
+                    <Link href="/signin" className="w-full bg-white/[0.05] border border-white/[0.1] py-3 rounded-xl font-medium text-sm text-center block hover:bg-white/[0.08] transition">
+                      Already have an account? Sign In
+                    </Link>
+                  </>
+                ) : (
+                  <Link href="/pricing" className="w-full bg-gradient-to-r from-amber-400 to-orange-500 py-3 rounded-xl font-bold text-black text-sm hover:opacity-90 transition text-center block">
+                    View Pro Plans →
+                  </Link>
+                )}
+                <button onClick={() => setShowUpgradePrompt(false)} className="text-white/30 text-xs hover:text-white/50 transition mt-1">
+                  Maybe later
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
