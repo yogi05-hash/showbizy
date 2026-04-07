@@ -294,6 +294,40 @@ export default function JobsPage() {
                     <span>via {selectedJob.source}</span>
                   </div>
 
+                  {/* Share button */}
+                  <div className="flex gap-3 mb-4">
+                    <button
+                      onClick={() => {
+                        const shareUrl = `${window.location.origin}/jobs/${selectedJob.id}`
+                        if (navigator.share) {
+                          navigator.share({ title: `${selectedJob.title} at ${selectedJob.company}`, text: `Check out this role on ShowBizy: ${selectedJob.title} at ${selectedJob.company}`, url: shareUrl })
+                        } else {
+                          navigator.clipboard.writeText(shareUrl)
+                          alert('Link copied to clipboard!')
+                        }
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                    >
+                      📤 Share this job
+                    </button>
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${selectedJob.title} at ${selectedJob.company} — apply on ShowBizy`)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://showbizy.ai'}/jobs/${selectedJob.id}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                    >
+                      𝕏
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://showbizy.ai'}/jobs/${selectedJob.id}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                    >
+                      in
+                    </a>
+                  </div>
+
                   {appliedJobs.includes(selectedJob.id) ? (
                     <div className="bg-green-400/10 border border-green-400/20 rounded-xl p-4 text-center text-green-300 text-sm font-medium">
                       ✓ You&apos;ve applied to this role
