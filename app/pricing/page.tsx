@@ -13,7 +13,6 @@ const FREE_FEATURES = [
 ]
 
 const PRO_FEATURES = [
-  '✨ Everything in Free, plus:',
   '🎯 Apply to AI-generated projects',
   '🤖 AI-powered project matching for your skills',
   '💼 Apply to real industry jobs (BBC, Netflix, etc.)',
@@ -25,7 +24,6 @@ const PRO_FEATURES = [
 ]
 
 const STUDIO_FEATURES = [
-  '✨ Everything in Pro, plus:',
   '🎬 Post your own creative projects',
   '🤖 AI auto-matches you with the best talent in your city',
   '📋 Application management dashboard',
