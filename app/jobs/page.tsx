@@ -313,20 +313,37 @@ export default function JobsPage() {
                     <button
                       onClick={() => {
                         const jobUrl = `https://showbizy.ai/jobs/${selectedJob.id}`
-                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${selectedJob.title} at ${selectedJob.company} — apply on ShowBizy`)}&url=${encodeURIComponent(jobUrl)}`, '_blank')
+                        const tweetText = `${selectedJob.title} at ${selectedJob.company} 🎬\n\n💰 ${selectedJob.salary}\n📍 ${selectedJob.location}\n\nApply on @showbizy_ai`
+                        const url = `https://x.com/intent/post?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(jobUrl)}`
+                        window.open(url, 'twitter-share', 'width=600,height=600')
                       }}
                       className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                      title="Share on X"
                     >
                       𝕏
                     </button>
                     <button
                       onClick={() => {
                         const jobUrl = `https://showbizy.ai/jobs/${selectedJob.id}`
-                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(jobUrl)}`, '_blank')
+                        // LinkedIn share dialog — they pull title/desc from OG tags
+                        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(jobUrl)}`
+                        window.open(url, 'linkedin-share', 'width=600,height=600')
                       }}
                       className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                      title="Share on LinkedIn"
                     >
                       in
+                    </button>
+                    <button
+                      onClick={() => {
+                        const jobUrl = `https://showbizy.ai/jobs/${selectedJob.id}`
+                        const text = `${selectedJob.title} at ${selectedJob.company}\n💰 ${selectedJob.salary}\n📍 ${selectedJob.location}\n\nApply on ShowBizy: ${jobUrl}`
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+                      }}
+                      className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                      title="Share on WhatsApp"
+                    >
+                      💬
                     </button>
                   </div>
 
