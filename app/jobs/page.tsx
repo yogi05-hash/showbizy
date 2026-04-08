@@ -345,6 +345,24 @@ export default function JobsPage() {
                     >
                       💬
                     </button>
+                    <button
+                      onClick={async () => {
+                        const jobUrl = `https://showbizy.ai/jobs/${selectedJob.id}`
+                        const text = `🎬 ${selectedJob.title}\n🏢 ${selectedJob.company}\n💰 ${selectedJob.salary}\n📍 ${selectedJob.location}\n\nApply on ShowBizy 👉 ${jobUrl}`
+                        try {
+                          await navigator.clipboard.writeText(text)
+                          alert('Copied! Open Instagram and paste in your story or DM 📸')
+                        } catch {
+                          prompt('Copy this and paste in Instagram:', text)
+                        }
+                        // Open Instagram in new tab
+                        window.open('https://instagram.com', '_blank')
+                      }}
+                      className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                      title="Share on Instagram"
+                    >
+                      📸
+                    </button>
                   </div>
 
                   {appliedJobs.includes(selectedJob.id) ? (
