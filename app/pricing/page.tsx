@@ -5,28 +5,35 @@ import { useState, useEffect } from 'react'
 import { detectLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 
 const FREE_FEATURES = [
-  'Create your profile',
-  'Browse AI-generated projects',
-  'Community access',
+  '🎬 Create your creative profile',
+  '👀 Browse AI-generated projects',
+  '🔍 View industry job listings',
+  '💬 Community access',
+  '🚫 No credit card required',
 ]
 
 const PRO_FEATURES = [
-  'Everything in Free',
-  'Apply to projects',
-  'AI-powered matching',
-  'Featured portfolio page',
-  'Direct messaging',
-  'Weekly project digest email',
+  '✨ Everything in Free, plus:',
+  '🎯 Apply to AI-generated projects',
+  '🤖 AI-powered project matching for your skills',
+  '💼 Apply to real industry jobs (BBC, Netflix, etc.)',
+  '📄 Upload CV + send cover letters',
+  '⭐ Featured portfolio placement',
+  '✉️ Direct messaging with project leads',
+  '📬 Weekly curated project digest',
+  '🚀 Priority support',
 ]
 
 const STUDIO_FEATURES = [
-  'Everything in Pro',
-  'Team management tools',
-  'Advanced analytics',
-  'Featured placement priority',
-  'Verified creative badge',
-  'Custom project briefs',
-  'Early access to new features',
+  '✨ Everything in Pro, plus:',
+  '🎬 Post your own creative projects',
+  '🤖 AI auto-matches you with the best talent in your city',
+  '📋 Application management dashboard',
+  '✅ Accept / reject candidates with one click',
+  '📊 Track applications by project',
+  '🏆 Verified Studio badge on your profile',
+  '⭐ Featured placement in browse',
+  '🎯 Custom AI brief generation',
 ]
 
 interface UserData {
@@ -175,7 +182,8 @@ export default function PricingPage() {
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 flex flex-col">
             <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-2">Free</h3>
             <p className="text-5xl font-bold mb-1">{formatPrice(PRICING[location.currency.code].free, location.currency.code)}</p>
-            <p className="text-sm text-white/30 mb-8">Forever free</p>
+            <p className="text-sm text-white/30 mb-2">Forever free</p>
+            <p className="text-xs text-white/50 mb-8 italic">Perfect for exploring what ShowBizy offers</p>
             <ul className="space-y-4 mb-8 flex-1">
               {FREE_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-3 text-sm text-white/60">
@@ -202,7 +210,8 @@ export default function PricingPage() {
               <p className="text-5xl font-bold mb-1">
                 {formatPrice(PRICING[location.currency.code].pro, location.currency.code)}<span className="text-lg text-white/40">/mo</span>
               </p>
-              <p className="text-sm text-white/30 mb-8">For serious creatives</p>
+              <p className="text-sm text-white/30 mb-2">For freelance creatives looking for work</p>
+              <p className="text-xs text-white/50 mb-8 italic">Get matched, apply, and land real projects</p>
               <ul className="space-y-4 mb-8 flex-1">
                 {PRO_FEATURES.map((f) => (
                   <li key={f} className="flex items-start gap-3 text-sm text-white/80">
@@ -240,7 +249,8 @@ export default function PricingPage() {
             <p className="text-5xl font-bold mb-1">
               {formatPrice(PRICING[location.currency.code].studio, location.currency.code)}<span className="text-lg text-white/40">/mo</span>
             </p>
-            <p className="text-sm text-white/30 mb-8">For teams & agencies</p>
+            <p className="text-sm text-white/30 mb-2">For agencies, brands & production companies</p>
+            <p className="text-xs text-white/50 mb-8 italic">Post projects + AI finds the right talent for you</p>
             <ul className="space-y-4 mb-8 flex-1">
               {STUDIO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-3 text-sm text-white/80">
