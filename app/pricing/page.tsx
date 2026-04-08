@@ -42,6 +42,9 @@ interface UserData {
   email: string
   avatar?: string
   is_pro?: boolean
+  plan?: string
+  company_name?: string
+  verified?: boolean
 }
 
 export default function PricingPage() {
@@ -77,6 +80,16 @@ export default function PricingPage() {
       } catch { /* no valid user data */ }
     }
   }, [])
+
+  // Smart pricing logic — show only relevant cards based on user state
+  const isPro = user?.plan === 'pro' || user?.is_pro
+  const isStudio = user?.plan === 'studio'
+  const isCompany = !!user?.company_name // Registered as Studio
+  const isCreative = !!user && !user.company_name // Plain creative signup
+  const showPro = !user || isCreative || isPro
+  const showStudio = !user || isCompany || isStudio
+  const visibleCount = 1 + (showPro ? 1 : 0) + (showStudio ? 1 : 0)
+  const gridCols = visibleCount === 3 ? 'md:grid-cols-3' : visibleCount === 2 ? 'md:grid-cols-2 max-w-3xl' : 'md:grid-cols-1 max-w-md'
 
   const handleUpgrade = async (plan: 'pro' | 'studio' = 'pro') => {
     setLoading(true)
@@ -180,13 +193,26 @@ export default function PricingPage() {
         <div className="text-center mb-16">
           <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Pricing</span>
           <h1 className="text-4xl md:text-6xl font-bold mt-3 mb-4">
-            Plans for every{' '}
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-              creative
-            </span>
+            {isPro ? (
+              <>Your <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">Pro</span> membership</>
+            ) : isStudio ? (
+              <>Your <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Studio</span> membership</>
+            ) : isCompany ? (
+              <>Upgrade to <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Studio</span></>
+            ) : isCreative ? (
+              <>Upgrade to <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">Pro</span></>
+            ) : (
+              <>Plans for every <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">creative</span></>
+            )}
           </h1>
           <p className="text-white/50 text-lg max-w-xl mx-auto">
-            Start free and upgrade when you&apos;re ready to unlock unlimited access.
+            {!user ? (
+              <>ShowBizy works two ways: <span className="text-white/80">Creatives</span> find work (Free / Pro). <span className="text-white/80">Companies</span> hire talent (Studio).</>
+            ) : isPro || isStudio ? (
+              <>You&apos;re all set. Manage your subscription anytime.</>
+            ) : (
+              <>Start free and upgrade when you&apos;re ready to unlock unlimited access.</>
+            )}
           </p>
         </div>
 
@@ -198,7 +224,7 @@ export default function PricingPage() {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className={`grid ${gridCols} gap-8 mx-auto`}>
           {/* Free */}
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 flex flex-col">
             <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-2">Free</h3>
@@ -222,6 +248,7 @@ export default function PricingPage() {
           </div>
 
           {/* Pro */}
+          {showPro && (
           <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500">
             <div className="bg-[#030712] rounded-2xl p-8 h-full flex flex-col relative">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-xs font-bold px-4 py-1 rounded-full">
@@ -263,8 +290,10 @@ export default function PricingPage() {
               )}
             </div>
           </div>
+          )}
 
           {/* Studio */}
+          {showStudio && (
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 flex flex-col">
             <h3 className="text-sm font-bold text-orange-400 uppercase tracking-wider mb-2">Studio</h3>
             <p className="text-5xl font-bold mb-1">
@@ -280,21 +309,28 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <button
-              onClick={() => handleUpgrade('studio')}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-black py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                  Loading...
-                </span>
-              ) : (
-                'Upgrade to Studio'
-              )}
-            </button>
+            {isStudio ? (
+              <div className="w-full bg-gradient-to-r from-orange-500/20 to-amber-600/20 border border-orange-500/30 py-3.5 rounded-xl font-semibold text-sm text-center text-orange-300">
+                You&apos;re on Studio ✨
+              </div>
+            ) : (
+              <button
+                onClick={() => handleUpgrade('studio')}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-black py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    Loading...
+                  </span>
+                ) : (
+                  'Upgrade to Studio'
+                )}
+              </button>
+            )}
           </div>
+          )}
         </div>
 
         {/* FAQ */}
