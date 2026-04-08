@@ -161,6 +161,7 @@ function DashboardPage() {
         <div className="flex items-center gap-6 text-sm">
           <Link href="/dashboard" className="text-white font-medium">Dashboard</Link>
           <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
+          <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
           <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
           <button onClick={handleSignOut} className="text-white/50 hover:text-white transition">Sign out</button>
           <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-lg overflow-hidden">

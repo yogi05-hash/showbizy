@@ -83,6 +83,7 @@ export default function ProjectsPage() {
           <Link href="/" className="text-white/50 hover:text-white transition">Home</Link>
           <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
           <Link href="/projects" className="text-white font-medium">Projects</Link>
+          <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
         </div>
       </nav>
 

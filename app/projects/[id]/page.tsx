@@ -177,6 +177,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </Link>
         <div className="flex items-center gap-6 text-sm">
           <Link href="/projects" className="text-white/50 hover:text-white transition">← Projects</Link>
+          <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
           <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
         </div>
       </nav>
