@@ -10,11 +10,19 @@ function formatSalary(min?: number, max?: number): string {
 }
 
 async function fetchJobForMeta(id: string) {
-  // Check mock jobs
+  // Check mock jobs first (instant)
   const mock = MOCK_JOBS.find(j => j.id === id)
-  if (mock) return mock
+  if (mock) {
+    return {
+      title: mock.title,
+      company: mock.company,
+      location: mock.location,
+      salary: mock.salary,
+      description: mock.description.slice(0, 200),
+    }
+  }
 
-  // Check Adzuna
+  // For Adzuna jobs, search by ID since direct endpoint doesn't exist
   if (id.startsWith('az-')) {
     const adzunaId = id.replace('az-', '')
     const appId = process.env.ADZUNA_APP_ID
@@ -22,17 +30,19 @@ async function fetchJobForMeta(id: string) {
     if (!appId || !appKey) return null
 
     try {
-      const url = `https://api.adzuna.com/v1/api/jobs/gb/${adzunaId}?app_id=${appId}&app_key=${appKey}`
+      // Adzuna: search using the ID as a query — this returns the job
+      const url = `https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=${appId}&app_key=${appKey}&what_and=${adzunaId}&results_per_page=10`
       const res = await fetch(url, { next: { revalidate: 3600 } })
       if (res.ok) {
-        const r = await res.json()
-        if (r.id) {
+        const data = await res.json()
+        const result = data.results?.find((r: { id?: string | number }) => r.id?.toString() === adzunaId) || data.results?.[0]
+        if (result && result.id) {
           return {
-            title: (r.title || '').replace(/<[^>]*>/g, ''),
-            company: r.company?.display_name || 'Company',
-            location: r.location?.display_name || 'UK',
-            salary: formatSalary(r.salary_min, r.salary_max),
-            description: (r.description || '').replace(/<[^>]*>/g, '').slice(0, 200),
+            title: (result.title || '').replace(/<[^>]*>/g, ''),
+            company: result.company?.display_name || 'Company',
+            location: result.location?.display_name || 'UK',
+            salary: formatSalary(result.salary_min, result.salary_max),
+            description: (result.description || '').replace(/<[^>]*>/g, '').slice(0, 200),
           }
         }
       }
