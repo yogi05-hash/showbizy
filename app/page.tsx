@@ -199,6 +199,7 @@ export default function Home() {
   })
   const [cities, setCities] = useState(['London', 'Manchester', 'Birmingham'])
   const [featuredJobs, setFeaturedJobs] = useState<{id:string;title:string;company:string;location:string;salary:string;category:string;type:string;posted:string}[]>([])
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [liveProjects, setLiveProjects] = useState<{id:string;title:string;stream:string;streamIcon:string;genre:string;location:string;timeline:string;description:string;teamSize:number;filledRoles:number;status:string;roles:{role:string;filled:boolean}[]}[]>([])
 
   useEffect(() => {
@@ -300,7 +301,7 @@ export default function Home() {
         .hero-fade-in { animation: hero-fade 0.8s ease forwards; opacity: 0; animation-delay: 0.4s; }
       `}</style>
       {/* ─── NAV ─── */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
+      <nav className="relative flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="ShowBizy" width={200} height={56} style={{ height: 48, width: 'auto' }} unoptimized />
         </div>
@@ -315,7 +316,7 @@ export default function Home() {
           {isLoggedIn ? (
             <>
               <Link href="/dashboard" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Dashboard</Link>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-xs font-bold text-black">
                 Y
               </div>
             </>
@@ -327,7 +328,37 @@ export default function Home() {
               </Link>
             </>
           )}
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden text-white/70 hover:text-white transition p-1"
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            )}
+          </button>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full inset-x-0 bg-[#030712]/98 backdrop-blur-xl border-b border-white/10 z-50">
+            <div className="flex flex-col px-6 py-4 gap-1">
+              <Link href="#projects" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">Projects</Link>
+              <Link href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">How it works</Link>
+              <Link href="#creatives" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">Creatives</Link>
+              <Link href="/jobs" onClick={() => setMobileMenuOpen(false)} className="text-amber-400 hover:text-amber-300 transition py-3 border-b border-white/5 font-medium">Jobs 🔥</Link>
+              <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">Pricing</Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-white hover:text-white transition py-3 font-medium">Dashboard →</Link>
+              ) : (
+                <Link href="/signin" onClick={() => setMobileMenuOpen(false)} className="text-white hover:text-white transition py-3 font-medium">Sign in →</Link>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ─── HERO ─── */}
