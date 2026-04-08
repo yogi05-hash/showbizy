@@ -196,9 +196,38 @@ function DashboardPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-1">Welcome back, {user.name.split(' ')[0]} 👋</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold">Welcome back, {user.name.split(' ')[0]} 👋</h1>
+            {(user as { plan?: string }).plan === 'studio' && (
+              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full">STUDIO ✓</span>
+            )}
+            {(user as { plan?: string }).plan === 'pro' && (
+              <span className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold px-3 py-1 rounded-full">PRO</span>
+            )}
+          </div>
           <p className="text-white/40">Here&apos;s what&apos;s happening with your creative projects</p>
         </div>
+
+        {/* Studio CTA Banner */}
+        {(user as { plan?: string }).plan === 'studio' && (
+          <div className="mb-6 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">🎬</span>
+                <h3 className="font-bold text-lg">Ready to create something?</h3>
+              </div>
+              <p className="text-white/60 text-sm">Post a project and our AI will match it with the right talent in your area.</p>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/studio/applications" className="bg-white/[0.05] border border-white/[0.1] px-5 py-3 rounded-xl text-sm font-medium hover:bg-white/[0.08] transition whitespace-nowrap">
+                Applications
+              </Link>
+              <Link href="/studio/post-project" className="bg-gradient-to-r from-amber-500 to-orange-500 text-black px-5 py-3 rounded-xl text-sm font-bold hover:opacity-90 transition whitespace-nowrap">
+                + Post Project
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}

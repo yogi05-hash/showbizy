@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendProUpgradeEmail } from '@/lib/email'
+import { sendProUpgradeEmail, sendStudioUpgradeEmail } from '@/lib/email'
 import Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
@@ -43,14 +43,15 @@ export async function POST(req: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.userId
+        const plan = (session.metadata?.plan === 'studio' ? 'studio' : 'pro') as 'pro' | 'studio'
 
         if (userId) {
-          // Try to update is_pro column - handle gracefully if column doesn't exist
           try {
             const { error } = await supabaseAdmin
               .from('showbizy_users')
               .update({
                 is_pro: true,
+                plan,
                 stripe_customer_id: session.customer as string,
                 stripe_subscription_id: session.subscription as string,
               })
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
             if (error) {
               console.error('Supabase update error:', error)
             } else {
-              // Send Pro upgrade confirmation email
+              // Send the right upgrade confirmation email
               try {
                 const { data: userData } = await supabaseAdmin
                   .from('showbizy_users')
@@ -70,19 +71,25 @@ export async function POST(req: NextRequest) {
                 if (userData) {
                   const amountPaid = session.amount_total
                     ? `£${(session.amount_total / 100).toFixed(2)}`
-                    : 'Pro plan'
-                  await sendProUpgradeEmail(
-                    { name: userData.name, email: userData.email },
-                    amountPaid
-                  )
+                    : (plan === 'studio' ? 'Studio plan' : 'Pro plan')
+                  if (plan === 'studio') {
+                    await sendStudioUpgradeEmail(
+                      { name: userData.name, email: userData.email },
+                      amountPaid
+                    )
+                  } else {
+                    await sendProUpgradeEmail(
+                      { name: userData.name, email: userData.email },
+                      amountPaid
+                    )
+                  }
                 }
               } catch (emailErr) {
-                console.error('[webhook] Failed to send Pro upgrade email:', emailErr)
-                // Don't fail the webhook if email fails
+                console.error('[webhook] Failed to send upgrade email:', emailErr)
               }
             }
           } catch (dbError) {
-            console.error('Database error during pro upgrade:', dbError)
+            console.error('Database error during upgrade:', dbError)
           }
         }
         break
@@ -109,7 +116,7 @@ export async function POST(req: NextRequest) {
           if (users && users.length > 0) {
             const { error } = await supabaseAdmin
               .from('showbizy_users')
-              .update({ is_pro: false })
+              .update({ is_pro: false, plan: 'free' })
               .eq('id', users[0].id)
 
             if (error) {

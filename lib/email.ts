@@ -468,3 +468,61 @@ export async function sendProUpgradeEmail(
     throw err
   }
 }
+
+// ─── Studio Upgrade Email ─────────────────────────────────────────────────
+export async function sendStudioUpgradeEmail(
+  user: { name: string; email: string },
+  amountPaid?: string
+): Promise<void> {
+  const amount = amountPaid || '£29/month'
+
+  const benefitsHtml = [
+    '🎬 Post your own creative projects',
+    '🤖 AI auto-matches you with the right talent',
+    '📋 Manage applications in your Studio dashboard',
+    '✨ Verified Studio badge on your profile',
+    '⭐ Featured placement in browse',
+    '📊 Project analytics & insights',
+    '🚀 Early access to all new features',
+  ].map(b =>
+    `<tr><td style="padding:6px 0;color:#e5e7eb;font-size:14px;">
+      <span style="color:#F5B731;margin-right:8px;">✓</span>${b}
+    </td></tr>`
+  ).join('')
+
+  const body = `
+    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 🎬</p>
+    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Welcome to <strong style="color:#F5B731;">ShowBizy Studio</strong>! You can now post your own creative projects and have our AI find the perfect talent to bring them to life.
+    </p>
+    ${card('Your Studio Benefits', `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        ${benefitsHtml}
+      </table>
+    `)}
+    ${card('Payment Receipt', `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        ${infoRow('Plan', 'ShowBizy Studio')}
+        ${infoRow('Amount', `<strong style="color:#e5e7eb;">${amount}</strong>`)}
+        ${infoRow('Status', '<span style="color:#22c55e;">✓ Confirmed</span>')}
+      </table>
+    `)}
+    <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 24px;">
+      Ready to post your first project? Head to your Studio dashboard to get started. Our AI will scan our creative pool and notify the best matches automatically.
+    </p>
+    ${ctaButton('Post Your First Project →', `${BASE_URL}/studio/post-project`)}
+  `
+
+  try {
+    await transporter.sendMail({
+      from: FROM,
+      to: user.email,
+      subject: `🎬 Welcome to ShowBizy Studio!`,
+      html: wrapEmail(`You're ShowBizy Studio! 🎬`, body),
+    })
+    console.log(`[email] Studio upgrade email sent to ${user.email}`)
+  } catch (err) {
+    console.error(`[email] Failed to send Studio upgrade email to ${user.email}:`, err)
+    throw err
+  }
+}

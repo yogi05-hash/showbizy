@@ -71,12 +71,11 @@ export default function PricingPage() {
     }
   }, [])
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (plan: 'pro' | 'studio' = 'pro') => {
     setLoading(true)
     setError('')
 
     try {
-      // TODO: Replace with real user data from auth
       const stored = localStorage.getItem('showbizy_user')
       if (!stored) {
         window.location.href = '/signin'
@@ -91,6 +90,7 @@ export default function PricingPage() {
         body: JSON.stringify({
           email: user.email,
           userId: user.id,
+          plan,
         }),
       })
 
@@ -217,13 +217,13 @@ export default function PricingPage() {
                 </div>
               ) : (
                 <button
-                  onClick={handleUpgrade}
+                  onClick={() => handleUpgrade('pro')}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                      <span className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full" />
                       Loading...
                     </span>
                   ) : (
@@ -250,9 +250,9 @@ export default function PricingPage() {
               ))}
             </ul>
             <button
-              onClick={handleUpgrade}
+              onClick={() => handleUpgrade('studio')}
               disabled={loading}
-              className="w-full bg-white/5 border border-white/10 py-3.5 rounded-xl font-semibold text-sm hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-black py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
