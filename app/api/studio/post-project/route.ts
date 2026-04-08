@@ -29,10 +29,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid stream' }, { status: 400 })
     }
 
-    // Verify user is Studio
+    // Verify user is Studio AND verified
     const { data: user, error: userErr } = await supabaseAdmin
       .from('showbizy_users')
-      .select('id, name, plan, is_pro')
+      .select('id, name, plan, is_pro, verified, company_name')
       .eq('id', user_id)
       .single()
 
@@ -42,6 +42,10 @@ export async function POST(req: Request) {
 
     if (user.plan !== 'studio') {
       return NextResponse.json({ error: 'Studio plan required to post projects' }, { status: 403 })
+    }
+
+    if (!user.verified) {
+      return NextResponse.json({ error: 'Studio verification pending. Please wait for admin approval (24-48 hours).' }, { status: 403 })
     }
 
     // Insert project

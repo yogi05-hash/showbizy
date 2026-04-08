@@ -22,6 +22,8 @@ export async function POST(request: Request) {
       city,
       availability: availability || 'full-time',
       portfolio,
+      verified: true, // Creatives don't need verification, only Studios do
+      verification_status: 'not_required',
     }
 
     // Include avatar if provided

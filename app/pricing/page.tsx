@@ -84,6 +84,27 @@ export default function PricingPage() {
 
     try {
       const stored = localStorage.getItem('showbizy_user')
+
+      // Studio flow: must register as Studio first (separate signup with company info + verification)
+      if (plan === 'studio') {
+        if (!stored) {
+          window.location.href = '/signup/studio'
+          return
+        }
+        const u = JSON.parse(stored)
+        // Check if user has company info (i.e., already registered as Studio)
+        if (!u.company_name) {
+          window.location.href = '/signup/studio'
+          return
+        }
+        // Check if Studio is verified
+        if (!u.verified) {
+          setError('Your Studio account is pending verification. We will email you once approved (usually within 24-48 hours).')
+          setLoading(false)
+          return
+        }
+      }
+
       if (!stored) {
         window.location.href = '/signin'
         return

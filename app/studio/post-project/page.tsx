@@ -19,7 +19,7 @@ const COMMON_ROLES = [
 
 export default function PostProjectPage() {
   const router = useRouter()
-  const [user, setUser] = useState<{ id: string; name: string; plan?: string; is_pro?: boolean } | null>(null)
+  const [user, setUser] = useState<{ id: string; name: string; plan?: string; is_pro?: boolean; verified?: boolean } | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -139,6 +139,26 @@ export default function PostProjectPage() {
     return (
       <div className="min-h-screen bg-[#030712] text-white flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  // Show pending verification message if Studio is not verified
+  if (user && user.plan === 'studio' && !user.verified) {
+    return (
+      <div className="min-h-screen bg-[#030712] text-white">
+        <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="ShowBizy" style={{ height: 48, width: 'auto' }} />
+          </Link>
+        </nav>
+        <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+          <div className="text-6xl mb-6">⏳</div>
+          <h1 className="text-3xl font-bold mb-4">Verification Pending</h1>
+          <p className="text-white/60 mb-2">Your Studio account is being reviewed by our team.</p>
+          <p className="text-white/40 text-sm mb-8">This usually takes 24-48 hours. You&apos;ll receive an email once you&apos;re approved.</p>
+          <Link href="/dashboard" className="bg-white/[0.05] border border-white/[0.1] px-6 py-3 rounded-xl font-medium">← Back to Dashboard</Link>
+        </div>
       </div>
     )
   }
