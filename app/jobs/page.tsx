@@ -260,9 +260,17 @@ export default function JobsPage() {
             )}
           </div>
 
-          {/* Detail Panel */}
+          {/* Detail Panel — full-screen overlay on mobile, sticky sidebar on desktop */}
           {selectedJob && isPro && (
-            <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 lg:sticky lg:top-24 self-start">
+            <div className="fixed inset-0 z-50 bg-[#020617] overflow-y-auto lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:overflow-visible">
+              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 lg:sticky lg:top-24 self-start m-4 lg:m-0">
+                {/* Mobile close/back button */}
+                <button
+                  onClick={() => { setSelectedJob(null); setShowApply(false); setApplied(false); setApplyError('') }}
+                  className="lg:hidden flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium mb-4 -mt-1"
+                >
+                  ← Back to jobs
+                </button>
               {!showApply ? (
                 <>
                   <span className={`text-xs border px-2.5 py-1 rounded-full font-medium ${categoryColors[selectedJob.category] || ''}`}>
@@ -508,6 +516,7 @@ export default function JobsPage() {
                   </div>
                 </>
               )}
+              </div>
             </div>
           )}
         </div>
