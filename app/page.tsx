@@ -1071,9 +1071,12 @@ export default function Home() {
           <p className="text-white/30 text-sm">
             © 2026 ShowBizy.ai — AI creates the project. You bring the talent.
           </p>
-          <div className="flex gap-6 text-sm">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm justify-center">
             <Link href="/pricing" className="text-white/40 hover:text-white transition">Pricing</Link>
-            <Link href="/projects" className="text-white/40 hover:text-white transition">Projects</Link>
+            <Link href="/jobs" className="text-white/40 hover:text-white transition">Jobs</Link>
+            <Link href="/support" className="text-white/40 hover:text-white transition">Support</Link>
+            <Link href="/privacy" className="text-white/40 hover:text-white transition">Privacy</Link>
+            <Link href="/terms" className="text-white/40 hover:text-white transition">Terms</Link>
             <Link href="mailto:hello@bilabs.ai" className="text-white/40 hover:text-white transition">Contact</Link>
           </div>
         </div>
