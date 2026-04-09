@@ -460,9 +460,76 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {/* Share */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
               <h3 className="font-bold mb-3">Share Project</h3>
-              <div className="flex gap-2">
-                <button className="flex-1 bg-white/5 hover:bg-white/10 transition py-2.5 rounded-xl text-sm">📋 Copy link</button>
-                <button className="flex-1 bg-white/5 hover:bg-white/10 transition py-2.5 rounded-xl text-sm">🐦 Tweet</button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={async () => {
+                    const shareUrl = `${window.location.origin}/projects/${project.id}`
+                    try {
+                      if (navigator.share) {
+                        await navigator.share({ title: `${project.title} on ShowBizy`, url: shareUrl })
+                      } else {
+                        await navigator.clipboard.writeText(shareUrl)
+                        alert('Link copied: ' + shareUrl)
+                      }
+                    } catch {
+                      prompt('Copy this link:', shareUrl)
+                    }
+                  }}
+                  className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-white/[0.05] border border-white/[0.1] py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                >
+                  📤 Share project
+                </button>
+                <button
+                  onClick={() => {
+                    const projectUrl = `https://showbizy.ai/projects/${project.id}`
+                    const tweetText = `${project.title} 🎬\n\n📍 ${project.location}\n🎭 ${project.stream}\n\nJoin the team on @showbizy_ai`
+                    const url = `https://x.com/intent/post?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(projectUrl)}`
+                    window.open(url, 'twitter-share', 'width=600,height=600')
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                  title="Share on X"
+                >
+                  𝕏
+                </button>
+                <button
+                  onClick={() => {
+                    const projectUrl = `https://showbizy.ai/projects/${project.id}`
+                    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(projectUrl)}`
+                    window.open(url, 'linkedin-share', 'width=600,height=600')
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                  title="Share on LinkedIn"
+                >
+                  in
+                </button>
+                <button
+                  onClick={() => {
+                    const projectUrl = `https://showbizy.ai/projects/${project.id}`
+                    const text = `${project.title}\n📍 ${project.location}\n🎭 ${project.stream}\n\nJoin on ShowBizy: ${projectUrl}`
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                  title="Share on WhatsApp"
+                >
+                  💬
+                </button>
+                <button
+                  onClick={() => {
+                    const projectUrl = `https://showbizy.ai/projects/${project.id}`
+                    const text = `🎬 ${project.title}\n📍 ${project.location}\n🎭 ${project.stream}\n\nJoin on ShowBizy 👉 ${projectUrl}`
+                    const win = window.open('https://www.instagram.com/', '_blank')
+                    navigator.clipboard.writeText(text).then(() => {
+                      if (win) win.focus()
+                      alert('✅ Copied! Paste in Instagram story or DM 📸')
+                    }).catch(() => {
+                      prompt('Copy this and paste in Instagram:', text)
+                    })
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-white/[0.05] border border-white/[0.1] px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition"
+                  title="Share on Instagram"
+                >
+                  📸
+                </button>
               </div>
             </div>
           </div>
