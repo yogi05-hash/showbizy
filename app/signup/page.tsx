@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { detectLocation } from '@/lib/location'
 import { STREAMS } from '@/lib/data'
 
 const STEPS = ['Account', 'Streams', 'Skills', 'Details']
@@ -26,6 +27,14 @@ export default function SignupPage() {
     availability: 'full-time',
     portfolio: '',
   })
+
+  // Auto-detect city from timezone
+  useEffect(() => {
+    const loc = detectLocation()
+    if (loc.city && !formData.city) {
+      setFormData(prev => ({ ...prev, city: loc.city }))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAvatarFile = useCallback((file: File) => {
     if (!file) return

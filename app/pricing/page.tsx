@@ -138,6 +138,7 @@ export default function PricingPage() {
           email: user.email,
           userId: user.id,
           plan,
+          currency: location.currency.code.toLowerCase(),
         }),
       })
 

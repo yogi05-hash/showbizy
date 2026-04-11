@@ -219,8 +219,10 @@ export default function Home() {
       .then(d => { if (d.projects?.length) setLiveProjects(d.projects.slice(0, 3)) })
       .catch(() => {})
 
-    // Fetch featured jobs from API
-    fetch('/api/jobs')
+    // Fetch featured jobs from API — localized by country
+    const countryMap: Record<string, string> = { UK: 'gb', USA: 'us', India: 'in', Germany: 'de', France: 'fr', Spain: 'de', Netherlands: 'de' }
+    const jobCountry = countryMap[detectedLocation.country] || 'gb'
+    fetch(`/api/jobs?country=${jobCountry}`)
       .then(r => r.json())
       .then(d => { if (d.jobs) setFeaturedJobs(d.jobs.slice(0, 6)) })
       .catch(() => {})

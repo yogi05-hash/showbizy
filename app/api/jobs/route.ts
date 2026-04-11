@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MOCK_JOBS, type Job } from '@/lib/jobs-data'
 
-// In-memory cache — 30 min TTL so jobs refresh more often
-let jobsCache: { data: Job[]; ts: number } | null = null
+// In-memory cache per country — 30 min TTL
+const jobsCacheMap: Record<string, { data: Job[]; ts: number }> = {}
 const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
 
 // Better search terms — focused on actual creative roles
@@ -61,9 +61,20 @@ function getJobType(contract: string | undefined): string {
   return 'Full-time'
 }
 
-function formatSalary(min?: number, max?: number): string {
+// Adzuna country codes + currency symbols
+const COUNTRY_CONFIG: Record<string, { adzuna: string; symbol: string; label: string }> = {
+  gb: { adzuna: 'gb', symbol: '£', label: 'UK' },
+  us: { adzuna: 'us', symbol: '$', label: 'USA' },
+  in: { adzuna: 'in', symbol: '₹', label: 'India' },
+  de: { adzuna: 'de', symbol: '€', label: 'Germany' },
+  fr: { adzuna: 'fr', symbol: '€', label: 'France' },
+  au: { adzuna: 'au', symbol: 'A$', label: 'Australia' },
+  ca: { adzuna: 'ca', symbol: 'C$', label: 'Canada' },
+}
+
+function formatSalary(min?: number, max?: number, symbol = '£'): string {
   if (!min && !max) return 'Competitive'
-  const fmt = (n: number) => n >= 1000 ? `£${Math.round(n / 1000)}K` : `£${Math.round(n)}`
+  const fmt = (n: number) => n >= 1000 ? `${symbol}${Math.round(n / 1000)}K` : `${symbol}${Math.round(n)}`
   if (min && max && min !== max) return `${fmt(min)}-${fmt(max)}/year`
   if (min) return `${fmt(min)}/year`
   if (max) return `${fmt(max)}/year`
@@ -94,12 +105,13 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-async function fetchAdzunaJobs(): Promise<Job[]> {
+async function fetchAdzunaJobs(country = 'gb'): Promise<Job[]> {
   const appId = process.env.ADZUNA_APP_ID
   const appKey = process.env.ADZUNA_APP_KEY
 
   if (!appId || !appKey) return shuffle(MOCK_JOBS)
 
+  const config = COUNTRY_CONFIG[country] || COUNTRY_CONFIG.gb
   const allJobs: Job[] = []
   const seenIds = new Set<string>()
 
@@ -110,7 +122,7 @@ async function fetchAdzunaJobs(): Promise<Job[]> {
     try {
       // Randomize the page number (1-3) so we get different results each refresh
       const page = Math.floor(Math.random() * 3) + 1
-      const url = `https://api.adzuna.com/v1/api/jobs/gb/search/${page}?app_id=${appId}&app_key=${appKey}&what=${encodeURIComponent(query)}&results_per_page=6&sort_by=date`
+      const url = `https://api.adzuna.com/v1/api/jobs/${config.adzuna}/search/${page}?app_id=${appId}&app_key=${appKey}&what=${encodeURIComponent(query)}&results_per_page=6&sort_by=date`
       const res = await fetch(url)
 
       if (!res.ok) continue
@@ -133,7 +145,7 @@ async function fetchAdzunaJobs(): Promise<Job[]> {
           title,
           company: r.company?.display_name || 'Company',
           location: r.location?.display_name || 'UK',
-          salary: formatSalary(r.salary_min, r.salary_max),
+          salary: formatSalary(r.salary_min, r.salary_max, config.symbol),
           category: categorizeJob(title, desc),
           type: getJobType(r.contract_type),
           description: desc.slice(0, 500),
@@ -157,24 +169,31 @@ async function fetchAdzunaJobs(): Promise<Job[]> {
 
 export async function GET(req: NextRequest) {
   try {
-    // Check cache
-    if (!jobsCache || Date.now() - jobsCache.ts > CACHE_TTL) {
-      const jobs = await fetchAdzunaJobs()
-      jobsCache = { data: jobs, ts: Date.now() }
+    const { searchParams } = new URL(req.url)
+
+    // Country detection — frontend sends detected country code
+    const country = (searchParams.get('country') || 'gb').toLowerCase()
+    const validCountry = COUNTRY_CONFIG[country] ? country : 'gb'
+
+    // Check cache for this country
+    const cached = jobsCacheMap[validCountry]
+    if (!cached || Date.now() - cached.ts > CACHE_TTL) {
+      const jobs = await fetchAdzunaJobs(validCountry)
+      jobsCacheMap[validCountry] = { data: jobs, ts: Date.now() }
     }
 
-    let jobs = [...jobsCache.data]
+    let jobs = [...jobsCacheMap[validCountry].data]
 
-    // Apply filters from query params
-    const { searchParams } = new URL(req.url)
+    // Apply filters
     const category = searchParams.get('category')
     const location = searchParams.get('location')
     const search = searchParams.get('search')
+    const locationLabel = COUNTRY_CONFIG[validCountry]?.label || 'UK'
 
     if (category && category !== 'All') {
       jobs = jobs.filter(j => j.category === category)
     }
-    if (location && location !== 'All UK') {
+    if (location && location !== `All ${locationLabel}`) {
       jobs = jobs.filter(j => j.location.toLowerCase().includes(location.toLowerCase()))
     }
     if (search) {
@@ -186,7 +205,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    return NextResponse.json({ jobs, total: jobs.length, cached: jobsCache.ts })
+    return NextResponse.json({ jobs, total: jobs.length, cached: jobsCacheMap[validCountry].ts, country: validCountry })
   } catch (error) {
     console.error('Jobs API error:', error)
     return NextResponse.json({ jobs: shuffle(MOCK_JOBS), total: MOCK_JOBS.length, cached: 0 })

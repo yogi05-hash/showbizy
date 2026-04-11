@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { email, userId, plan = 'pro' } = await req.json()
+    const { email, userId, plan = 'pro', currency = 'gbp' } = await req.json()
 
     if (!email || !userId) {
       return NextResponse.json(
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         userId,
         plan,
+        detectedCurrency: currency,
       },
       line_items: [
         {

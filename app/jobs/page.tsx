@@ -20,10 +20,25 @@ export default function JobsPage() {
   const [appliedJobs, setAppliedJobs] = useState<string[]>([])
   const [applyError, setApplyError] = useState('')
 
-  // Fetch jobs from API
+  // Detect country from timezone for local jobs
+  const detectCountry = (): string => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (tz.startsWith('America/')) return 'us'
+      if (tz.startsWith('Asia/Kolkata') || tz.startsWith('Asia/Calcutta')) return 'in'
+      if (tz === 'Europe/London') return 'gb'
+      if (tz.startsWith('Europe/')) return 'de' // Adzuna supports de for Europe
+      if (tz.startsWith('Australia/')) return 'au'
+      if (tz.startsWith('Canada/') || tz === 'America/Toronto') return 'ca'
+    } catch {}
+    return 'gb'
+  }
+
+  // Fetch jobs from API — localized by country
   useEffect(() => {
     setJobsLoading(true)
-    fetch('/api/jobs')
+    const country = detectCountry()
+    fetch(`/api/jobs?country=${country}`)
       .then(r => r.json())
       .then(d => { if (d.jobs) setJobs(d.jobs); setJobsLoading(false) })
       .catch(() => setJobsLoading(false))
