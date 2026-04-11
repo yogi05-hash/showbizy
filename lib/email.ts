@@ -412,7 +412,88 @@ export async function sendWeeklyDigestEmail(user: EmailUser, stats: WeeklyStats)
   })
 }
 
-// ─── 8. Pro Upgrade Confirmation ───────────────────────────────────────────
+// ─── 8. Weekly Digest for Cron (plain text style) ─────────────────────────
+interface DigestProject {
+  id: string
+  title: string
+  stream: string
+  location: string
+}
+
+interface DigestJob {
+  id: string
+  title: string
+  company: string
+  location: string
+  salary: string
+}
+
+export async function sendCronWeeklyDigest(
+  user: { name: string; email: string; is_pro?: boolean },
+  projects: DigestProject[],
+  jobs: DigestJob[],
+  stats: { totalNewProjects: number; totalNewJobs: number }
+): Promise<void> {
+  const projectsList = projects.map(p =>
+    `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`
+  ).join('\n')
+
+  const jobsList = jobs.map(j =>
+    `- ${j.title} at ${j.company} — ${j.salary}\n  https://showbizy.ai/jobs/${j.id}`
+  ).join('\n')
+
+  const proCta = user.is_pro
+    ? ''
+    : '\n---\nUpgrade to Pro to apply to all projects and jobs: https://showbizy.ai/pricing\n'
+
+  const textBody = `Hey ${user.name},
+
+Here's what's new on ShowBizy this week:
+
+${stats.totalNewProjects} new AI projects | ${stats.totalNewJobs} real jobs
+
+${projects.length > 0 ? `NEW PROJECTS:\n${projectsList}` : ''}
+
+${jobs.length > 0 ? `REAL JOBS:\n${jobsList}` : ''}
+${proCta}
+Browse all: https://showbizy.ai/projects
+
+— ShowBizy`
+
+  const projectsHtml = projects.map(p =>
+    `<li style="margin-bottom:8px;"><a href="https://showbizy.ai/projects/${p.id}" style="color:#1a1a1a;text-decoration:none;"><strong>${p.title}</strong></a> — ${p.stream}, ${p.location}</li>`
+  ).join('')
+
+  const jobsHtml = jobs.map(j =>
+    `<li style="margin-bottom:8px;"><a href="https://showbizy.ai/jobs/${j.id}" style="color:#1a1a1a;text-decoration:none;"><strong>${j.title}</strong> at ${j.company}</a> — ${j.salary}</li>`
+  ).join('')
+
+  const proCtaHtml = user.is_pro
+    ? ''
+    : `<p style="margin-top:24px;padding:16px;background:#f8f8f8;border-radius:8px;"><strong>Upgrade to Pro</strong> to apply to all projects and jobs.<br><a href="https://showbizy.ai/pricing" style="color:#7c3aed;">View Pro plans</a></p>`
+
+  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>Here's what's new on ShowBizy this week:</p>
+<p><strong>${stats.totalNewProjects} new AI projects</strong> | <strong>${stats.totalNewJobs} real jobs</strong></p>
+${projects.length > 0 ? `<p><strong>New Projects</strong></p><ul style="padding-left:20px;">${projectsHtml}</ul>` : ''}
+${jobs.length > 0 ? `<p><strong>Real Jobs</strong></p><ul style="padding-left:20px;">${jobsHtml}</ul>` : ''}
+${proCtaHtml}
+<p><a href="https://showbizy.ai/projects">Browse all projects</a> | <a href="https://showbizy.ai/jobs">Browse all jobs</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`
+
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `Your ShowBizy week: ${stats.totalNewProjects} new projects in your area`,
+    headers: { 'X-Priority': '1', 'Importance': 'High' },
+    text: textBody,
+    html: htmlBody,
+  })
+}
+
+// ─── 9. Pro Upgrade Confirmation ───────────────────────────────────────────
 export async function sendProUpgradeEmail(
   user: { name: string; email: string },
   amountPaid?: string

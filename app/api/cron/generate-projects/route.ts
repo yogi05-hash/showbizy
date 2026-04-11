@@ -1,16 +1,39 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { transporter } from '@/lib/email'
+
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions'
 
-// POST: Auto-generate projects for active cities
+// Auth check for Vercel cron
+function isAuthorized(req: NextRequest): boolean {
+  // Vercel crons send this header automatically
+  const authHeader = req.headers.get('authorization')
+  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
+  // Also allow manual trigger from dashboard (no auth for POST — existing behavior)
+  return false
+}
+
+// GET: Vercel cron trigger (daily at 6am UTC)
+export async function GET(req: NextRequest) {
+  if (!isAuthorized(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return generateProjects()
+}
+
+// POST: Manual trigger from UI (existing behavior)
 export async function POST() {
+  return generateProjects()
+}
+
+async function generateProjects() {
   try {
     if (!DEEPSEEK_API_KEY) {
-      return NextResponse.json({ 
-        error: 'AI service not configured' 
-      }, { status: 503 })
+      return NextResponse.json({ error: 'AI service not configured' }, { status: 503 })
     }
 
     // Fetch all unique cities from active users
@@ -30,10 +53,10 @@ export async function POST() {
       return NextResponse.json({ message: 'No cities with active users found' })
     }
 
-    const generatedProjects = []
+    const generatedProjects: { city: string; project: string; id: string }[] = []
 
-    // Generate 1-2 projects for each city
-    for (const city of uniqueCities.slice(0, 5)) { // Limit to 5 cities for now
+    // Generate 1 project per city (up to 5 cities)
+    for (const city of uniqueCities.slice(0, 5)) {
       try {
         // Fetch talent profiles in this city
         const { data: talentInCity } = await supabaseAdmin
@@ -42,7 +65,7 @@ export async function POST() {
           .eq('city', city)
           .limit(10)
 
-        const streams = ['Film & Video', 'Music', 'Fashion & Modelling', 'Influencer & Content', 'Visual Arts']
+        const streams = ['Film & Video', 'Music', 'Fashion & Modelling', 'Influencer & Content', 'Visual Arts', 'Performing Arts', 'Events & Live']
         const randomStream = streams[Math.floor(Math.random() * streams.length)]
 
         const prompt = `You are ShowBizy AI — a creative project generator for a platform that matches creative talent with AI-generated projects.
@@ -103,10 +126,7 @@ Return a JSON object:
                 role: 'system',
                 content: 'You are an expert creative director who generates inspiring, location-specific project briefs. Always respond with valid JSON only.'
               },
-              {
-                role: 'user',
-                content: prompt
-              }
+              { role: 'user', content: prompt }
             ],
             temperature: 0.9,
           })
@@ -118,7 +138,10 @@ Return a JSON object:
         }
 
         const completion = await response.json()
-        const projectData = JSON.parse(completion.choices[0].message.content || '{}')
+        let content = completion.choices[0].message.content || '{}'
+        // Strip markdown code blocks if present
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+        const projectData = JSON.parse(content)
 
         // Save project to database
         const { data: savedProject, error: projectError } = await supabaseAdmin
@@ -127,7 +150,7 @@ Return a JSON object:
             title: projectData.title,
             stream: projectData.stream,
             genre: projectData.genre,
-            location: `${city}`,
+            location: city,
             logline: projectData.logline,
             description: projectData.description,
             brief: projectData.description,
@@ -149,10 +172,10 @@ Return a JSON object:
 
         // Save project roles
         if (projectData.roles_needed && savedProject) {
-          const roles = projectData.roles_needed.map((role: any) => ({
+          const roles = projectData.roles_needed.map((role: { role: string; description?: string; skills_required?: string[] }) => ({
             project_id: savedProject.id,
             role: role.role,
-            description: role.description,
+            description: role.description || '',
             skills_required: role.skills_required || [],
             filled: false
           }))
@@ -181,7 +204,16 @@ Return a JSON object:
       }
     }
 
-    return NextResponse.json({ 
+    // ── Post-generation: auto-match users and notify ──
+    if (generatedProjects.length > 0) {
+      try {
+        await matchAndNotifyUsers(generatedProjects)
+      } catch (matchErr) {
+        console.error('Post-generation matching error:', matchErr)
+      }
+    }
+
+    return NextResponse.json({
       success: true,
       generated: generatedProjects.length,
       projects: generatedProjects
@@ -190,5 +222,82 @@ Return a JSON object:
   } catch (error) {
     console.error('Cron generation error:', error)
     return NextResponse.json({ error: 'Failed to generate projects' }, { status: 500 })
+  }
+}
+
+// Match newly generated projects with users in same city/stream and send notifications
+async function matchAndNotifyUsers(projects: { city: string; project: string; id: string }[]) {
+  for (const proj of projects) {
+    // Fetch full project details
+    const { data: project } = await supabaseAdmin
+      .from('showbizy_projects')
+      .select('id, title, stream, location, description')
+      .eq('id', proj.id)
+      .single()
+
+    if (!project) continue
+
+    // Find users in same city with matching streams
+    const { data: matchedUsers } = await supabaseAdmin
+      .from('showbizy_users')
+      .select('id, name, email, city, streams, skills, is_pro')
+      .ilike('city', `%${proj.city.split(',')[0]}%`)
+      .limit(30)
+
+    if (!matchedUsers?.length) continue
+
+    // Filter for stream match
+    const relevantUsers = matchedUsers.filter((u: { streams?: string[] }) =>
+      u.streams && u.streams.includes(project.stream)
+    )
+
+    if (!relevantUsers.length) continue
+
+    // Save matches to DB
+    const matchRecords = relevantUsers.map((u: { id: string }) => ({
+      user_id: u.id,
+      project_id: project.id,
+      score: 0.80,
+      status: 'pending',
+    }))
+
+    try {
+      await supabaseAdmin.from('showbizy_matches').insert(matchRecords)
+    } catch {
+      // Ignore duplicate match errors
+    }
+
+    // Send notification emails (top 10 per project)
+    for (const user of relevantUsers.slice(0, 10) as { id: string; name: string; email: string; is_pro?: boolean }[]) {
+      try {
+        await transporter.sendMail({
+          from: '"ShowBizy" <admin@showbizy.ai>',
+          to: user.email,
+          subject: `New project in your area: ${project.title}`,
+          headers: { 'X-Priority': '1', 'Importance': 'High' },
+          text: `Hey ${user.name},\n\nA new project just dropped in ${proj.city} that matches your skills:\n\n${project.title}\nStream: ${project.stream}\nLocation: ${project.location}\n\n${project.description?.slice(0, 200) || ''}\n\n${user.is_pro ? `View and apply: https://showbizy.ai/projects/${project.id}` : `Upgrade to Pro to apply: https://showbizy.ai/pricing`}\n\n— ShowBizy`,
+          html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+<p>Hey ${user.name},</p>
+<p>A new project just dropped in <strong>${proj.city}</strong> that matches your skills:</p>
+<p>
+<strong>${project.title}</strong><br>
+Stream: ${project.stream}<br>
+Location: ${project.location}
+</p>
+<p>${project.description?.slice(0, 200) || ''}${(project.description?.length || 0) > 200 ? '...' : ''}</p>
+<p>${user.is_pro
+  ? `<a href="https://showbizy.ai/projects/${project.id}">View and apply</a>`
+  : `<a href="https://showbizy.ai/pricing">Upgrade to Pro to apply</a>`
+}</p>
+<p style="color:#666; font-size: 12px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+        })
+      } catch (emailErr) {
+        console.error(`Failed to send match email to ${user.email}:`, emailErr)
+      }
+
+      // Rate limit emails
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
   }
 }
