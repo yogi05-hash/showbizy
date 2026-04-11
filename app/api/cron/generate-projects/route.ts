@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { transporter } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 300 // 5 minutes (Vercel Pro), falls back to plan limit
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions'
@@ -55,8 +55,8 @@ async function generateProjects() {
 
     const generatedProjects: { city: string; project: string; id: string }[] = []
 
-    // Generate 1 project per city (up to 5 cities)
-    for (const city of uniqueCities.slice(0, 5)) {
+    // Generate 1 project per city (up to 2 cities per run to avoid timeout)
+    for (const city of uniqueCities.sort(() => Math.random() - 0.5).slice(0, 2)) {
       try {
         // Fetch talent profiles in this city
         const { data: talentInCity } = await supabaseAdmin
@@ -204,13 +204,12 @@ Return a JSON object:
       }
     }
 
-    // ── Post-generation: auto-match users and notify ──
+    // ── Post-generation: auto-match users and notify (fire-and-forget) ──
     if (generatedProjects.length > 0) {
-      try {
-        await matchAndNotifyUsers(generatedProjects)
-      } catch (matchErr) {
-        console.error('Post-generation matching error:', matchErr)
-      }
+      // Don't await — let this run in background so function returns faster
+      matchAndNotifyUsers(generatedProjects).catch(err =>
+        console.error('Post-generation matching error:', err)
+      )
     }
 
     return NextResponse.json({
