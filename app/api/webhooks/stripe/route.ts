@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
                   try {
                     await transporter.sendMail({
                       from: '"ShowBizy" <admin@showbizy.ai>',
-                      to: 'yogibot05@gmail.com, admin@showbizy.ai',
+                      to: 'yogibot05@gmail.com, admin@showbizy.ai, hello@bilabs.ai',
                       subject: `Paid upgrade: ${userData.name} — ${plan === 'studio' ? 'Studio' : 'Pro'} (${amountPaid})`,
                       headers: {
                         'X-Priority': '1',
@@ -162,7 +162,7 @@ Amount: ${amountPaid}
               try {
                 await transporter.sendMail({
                   from: '"ShowBizy" <admin@showbizy.ai>',
-                  to: 'yogibot05@gmail.com, admin@showbizy.ai',
+                  to: 'yogibot05@gmail.com, admin@showbizy.ai, hello@bilabs.ai',
                   subject: `Subscription cancelled: ${cancelledUser.name} — ${cancelledUser.plan || 'Pro'}`,
                   headers: { 'X-Priority': '1', 'X-MSMail-Priority': 'High', 'Importance': 'High' },
                   text: `Subscription cancelled on ShowBizy\n\nName: ${cancelledUser.name}\nEmail: ${cancelledUser.email}\nPrevious plan: ${cancelledUser.plan || 'Pro'}\n\nTime: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)`,

@@ -134,7 +134,7 @@ async function sendDigests() {
       const { transporter } = await import('@/lib/email')
       await transporter.sendMail({
         from: '"ShowBizy" <admin@showbizy.ai>',
-        to: 'yogibot05@gmail.com, admin@showbizy.ai',
+        to: 'yogibot05@gmail.com, admin@showbizy.ai, hello@bilabs.ai',
         subject: `Weekly digest sent: ${sent} users, ${failed} failed`,
         headers: { 'X-Priority': '1', 'Importance': 'High' },
         text: `Weekly digest summary:\n\nSent: ${sent}\nFailed: ${failed}\nNew projects this week: ${totalNewProjects}\nReal jobs shown: ${totalNewJobs}\n\nTime: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}`,

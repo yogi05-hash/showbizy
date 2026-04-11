@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     try {
       await transporter.sendMail({
         from: '"ShowBizy" <admin@showbizy.ai>',
-        to: 'yogibot05@gmail.com, admin@showbizy.ai',
+        to: 'yogibot05@gmail.com, admin@showbizy.ai, hello@bilabs.ai',
         replyTo: email,
         subject: `New signup: ${name} — ${city || 'Unknown'}`,
         headers: {
