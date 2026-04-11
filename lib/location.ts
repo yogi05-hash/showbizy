@@ -108,9 +108,30 @@ const TIMEZONE_PATTERNS = [
 
 export function detectLocation(): LocationData {
   try {
+    // Allow URL override for testing: ?country=in, ?country=us, etc.
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const override = params.get('country')?.toUpperCase()
+      if (override) {
+        const overrideMap: Record<string, { city: string; country: string; currency: CurrencyCode }> = {
+          'IN': { city: 'Mumbai', country: 'India', currency: 'INR' },
+          'US': { city: 'Los Angeles', country: 'USA', currency: 'USD' },
+          'GB': { city: 'London', country: 'UK', currency: 'GBP' },
+          'UK': { city: 'London', country: 'UK', currency: 'GBP' },
+          'DE': { city: 'Berlin', country: 'Germany', currency: 'EUR' },
+          'EU': { city: 'Berlin', country: 'Europe', currency: 'EUR' },
+          'FR': { city: 'Paris', country: 'France', currency: 'EUR' },
+        }
+        const o = overrideMap[override]
+        if (o) {
+          return { city: o.city, country: o.country, currency: { code: o.currency, symbol: CURRENCY_SYMBOLS[o.currency] } }
+        }
+      }
+    }
+
     // Get browser timezone
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    
+
     // Try exact match first
     const exactMatch = TIMEZONE_MAPPING[timezone as keyof typeof TIMEZONE_MAPPING]
     if (exactMatch) {

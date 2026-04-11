@@ -213,10 +213,24 @@ export default function Home() {
     const detectedCities = getCitiesForLocation(detectedLocation)
     setCities(detectedCities)
 
-    // Fetch live projects from database
+    // Fetch live projects from database — prioritize user's detected location
     fetch('/api/projects')
       .then(r => r.json())
-      .then(d => { if (d.projects?.length) setLiveProjects(d.projects.slice(0, 3)) })
+      .then(d => {
+        if (d.projects?.length) {
+          const detectedCity = detectedLocation.city.toLowerCase()
+          const detectedCountry = detectedLocation.country.toLowerCase()
+          // Sort: local projects first, then others
+          const sorted = [...d.projects].sort((a: { location?: string }, b: { location?: string }) => {
+            const aLoc = (a.location || '').toLowerCase()
+            const bLoc = (b.location || '').toLowerCase()
+            const aLocal = aLoc.includes(detectedCity) || aLoc.includes(detectedCountry) ? 1 : 0
+            const bLocal = bLoc.includes(detectedCity) || bLoc.includes(detectedCountry) ? 1 : 0
+            return bLocal - aLocal
+          })
+          setLiveProjects(sorted.slice(0, 3))
+        }
+      })
       .catch(() => {})
 
     // Fetch featured jobs from API — localized by country
