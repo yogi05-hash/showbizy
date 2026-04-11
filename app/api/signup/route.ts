@@ -79,30 +79,30 @@ export async function POST(request: Request) {
       // Don't fail the signup if email fails
     }
 
-    // Notify admin of new signup
+    // Notify admin of new signup — plain text style to avoid Gmail Promotions tab
     try {
       await transporter.sendMail({
-        from: '"ShowBizy Admin" <admin@showbizy.ai>',
-        to: 'yogibot05@gmail.com',
+        from: '"ShowBizy" <admin@showbizy.ai>',
+        to: 'yogibot05@gmail.com, admin@showbizy.ai',
         replyTo: email,
-        subject: `🎬 New ShowBizy signup: ${name} (${city || 'Unknown'})`,
-        html: `
-<div style="font-family: -apple-system, sans-serif; max-width: 560px; margin: 0 auto; background: #1a1a2e; color: #e2e8f0; padding: 24px; border-radius: 12px;">
-  <div style="background: linear-gradient(135deg, #F5B731, #E87B35); padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-    <h2 style="color: #000; margin: 0;">🎬 New ShowBizy Signup</h2>
-  </div>
-  <table style="width: 100%; border-collapse: collapse;">
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Name</td><td style="padding: 8px 0; color: #fff; font-weight: 600;">${name}</td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #F5B731;">${email}</a></td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">City</td><td style="padding: 8px 0; color: #fff;">${city || 'Not provided'}</td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Availability</td><td style="padding: 8px 0; color: #fff;">${availability || 'Not provided'}</td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Streams</td><td style="padding: 8px 0; color: #fff;">${(streams || []).join(', ') || 'None'}</td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Skills</td><td style="padding: 8px 0; color: #fff;">${(skills || []).join(', ') || 'None'}</td></tr>
-    ${portfolio ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Portfolio</td><td style="padding: 8px 0;"><a href="${portfolio}" style="color: #F5B731;">${portfolio}</a></td></tr>` : ''}
-  </table>
-  <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); color: #64748b; font-size: 12px;">
-    Signed up at ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)
-  </p>
+        subject: `New signup: ${name} — ${city || 'Unknown'}`,
+        headers: {
+          'X-Priority': '1',
+          'X-MSMail-Priority': 'High',
+          'Importance': 'High',
+        },
+        text: `New creative signup on ShowBizy\n\nName: ${name}\nEmail: ${email}\nCity: ${city || 'Not provided'}\nAvailability: ${availability || 'Not provided'}\nStreams: ${(streams || []).join(', ') || 'None'}\nSkills: ${(skills || []).join(', ') || 'None'}${portfolio ? `\nPortfolio: ${portfolio}` : ''}\n\nSigned up at ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)`,
+        html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+<p><strong>New creative signup on ShowBizy</strong></p>
+<p>
+Name: ${name}<br>
+Email: <a href="mailto:${email}">${email}</a><br>
+City: ${city || 'Not provided'}<br>
+Availability: ${availability || 'Not provided'}<br>
+Streams: ${(streams || []).join(', ') || 'None'}<br>
+Skills: ${(skills || []).join(', ') || 'None'}${portfolio ? `<br>Portfolio: <a href="${portfolio}">${portfolio}</a>` : ''}
+</p>
+<p style="color:#666; font-size: 12px;">Signed up at ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)</p>
 </div>`,
       })
     } catch (adminEmailError) {

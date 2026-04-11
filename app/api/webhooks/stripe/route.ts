@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendProUpgradeEmail, sendStudioUpgradeEmail } from '@/lib/email'
+import { sendProUpgradeEmail, sendStudioUpgradeEmail, transporter } from '@/lib/email'
 import Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
@@ -83,6 +83,33 @@ export async function POST(req: NextRequest) {
                       amountPaid
                     )
                   }
+
+                  // Notify admin of paid upgrade
+                  try {
+                    await transporter.sendMail({
+                      from: '"ShowBizy" <admin@showbizy.ai>',
+                      to: 'yogibot05@gmail.com, admin@showbizy.ai',
+                      subject: `Paid upgrade: ${userData.name} — ${plan === 'studio' ? 'Studio' : 'Pro'} (${amountPaid})`,
+                      headers: {
+                        'X-Priority': '1',
+                        'X-MSMail-Priority': 'High',
+                        'Importance': 'High',
+                      },
+                      text: `New paid upgrade on ShowBizy\n\nName: ${userData.name}\nEmail: ${userData.email}\nPlan: ${plan === 'studio' ? 'Studio' : 'Pro'}\nAmount: ${amountPaid}\n\nTime: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)`,
+                      html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+<p><strong>New paid upgrade on ShowBizy</strong></p>
+<p>
+Name: ${userData.name}<br>
+Email: <a href="mailto:${userData.email}">${userData.email}</a><br>
+Plan: ${plan === 'studio' ? 'Studio' : 'Pro'}<br>
+Amount: ${amountPaid}
+</p>
+<p style="color:#666; font-size: 12px;">Time: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)</p>
+</div>`,
+                    })
+                  } catch (adminErr) {
+                    console.error('[webhook] Failed to send admin notification:', adminErr)
+                  }
                 }
               } catch (emailErr) {
                 console.error('[webhook] Failed to send upgrade email:', emailErr)
@@ -114,6 +141,13 @@ export async function POST(req: NextRequest) {
           }
 
           if (users && users.length > 0) {
+            // Get user info before downgrading
+            const { data: cancelledUser } = await supabaseAdmin
+              .from('showbizy_users')
+              .select('name, email, plan')
+              .eq('id', users[0].id)
+              .single()
+
             const { error } = await supabaseAdmin
               .from('showbizy_users')
               .update({ is_pro: false, plan: 'free' })
@@ -121,6 +155,30 @@ export async function POST(req: NextRequest) {
 
             if (error) {
               console.error('Supabase update error (subscription.deleted):', error)
+            }
+
+            // Notify admin of cancellation
+            if (cancelledUser) {
+              try {
+                await transporter.sendMail({
+                  from: '"ShowBizy" <admin@showbizy.ai>',
+                  to: 'yogibot05@gmail.com, admin@showbizy.ai',
+                  subject: `Subscription cancelled: ${cancelledUser.name} — ${cancelledUser.plan || 'Pro'}`,
+                  headers: { 'X-Priority': '1', 'X-MSMail-Priority': 'High', 'Importance': 'High' },
+                  text: `Subscription cancelled on ShowBizy\n\nName: ${cancelledUser.name}\nEmail: ${cancelledUser.email}\nPrevious plan: ${cancelledUser.plan || 'Pro'}\n\nTime: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)`,
+                  html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+<p><strong>Subscription cancelled on ShowBizy</strong></p>
+<p>
+Name: ${cancelledUser.name}<br>
+Email: <a href="mailto:${cancelledUser.email}">${cancelledUser.email}</a><br>
+Previous plan: ${cancelledUser.plan || 'Pro'}
+</p>
+<p style="color:#666; font-size: 12px;">Time: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)</p>
+</div>`,
+                })
+              } catch (adminErr) {
+                console.error('[webhook] Failed to send cancellation admin notification:', adminErr)
+              }
             }
           }
         } catch (dbError) {

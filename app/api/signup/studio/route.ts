@@ -166,37 +166,29 @@ export async function POST(request: Request) {
       console.error('Studio welcome email error:', emailError)
     }
 
-    // Notify admin of Studio signup
+    // Notify admin of Studio signup — plain text style to avoid Gmail Promotions tab
     try {
       await transporter.sendMail({
-        from: '"ShowBizy Admin" <admin@showbizy.ai>',
-        to: 'yogibot05@gmail.com',
+        from: '"ShowBizy" <admin@showbizy.ai>',
+        to: 'yogibot05@gmail.com, admin@showbizy.ai',
         replyTo: email,
-        subject: `🎬 New Studio signup: ${company_name} (Trust: ${trustScore})`,
-        html: `
-<div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; color: #e2e8f0; padding: 24px; border-radius: 12px;">
-  <div style="background: linear-gradient(135deg, #F5B731, #E87B35); padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-    <h2 style="color: #000; margin: 0;">🎬 New Studio Signup</h2>
-  </div>
-  <div style="background: ${autoVerified ? 'rgba(34,197,94,0.1)' : 'rgba(245,183,49,0.1)'}; border: 1px solid ${autoVerified ? 'rgba(34,197,94,0.3)' : 'rgba(245,183,49,0.3)'}; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-    <strong style="color: ${autoVerified ? '#22c55e' : '#F5B731'};">Trust Score: ${trustScore}/100</strong> — ${autoVerified ? 'Auto-approved' : 'Needs manual review'}
-  </div>
-  <table style="width: 100%; border-collapse: collapse;">
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Company</td><td style="padding: 8px 0; color: #fff; font-weight: 600;">${company_name}</td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Type</td><td style="padding: 8px 0; color: #fff;">${company_type}</td></tr>
-    ${company_website ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Website</td><td style="padding: 8px 0;"><a href="${company_website}" style="color: #F5B731;">${company_website}</a></td></tr>` : ''}
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Contact</td><td style="padding: 8px 0; color: #fff;">${name}${contact_role ? ` (${contact_role})` : ''}</td></tr>
-    <tr><td style="padding: 8px 0; color: #94a3b8;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #F5B731;">${email}</a></td></tr>
-    ${contact_phone ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Phone</td><td style="padding: 8px 0; color: #fff;">${contact_phone}</td></tr>` : ''}
-    ${company_address ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Address</td><td style="padding: 8px 0; color: #fff;">${company_address}, ${company_postcode || ''} ${company_country || ''}</td></tr>` : ''}
-    ${company_size ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Size</td><td style="padding: 8px 0; color: #fff;">${company_size} employees</td></tr>` : ''}
-    ${years_in_business ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Years</td><td style="padding: 8px 0; color: #fff;">${years_in_business} years</td></tr>` : ''}
-    ${streams?.length ? `<tr><td style="padding: 8px 0; color: #94a3b8;">Industries</td><td style="padding: 8px 0; color: #fff;">${streams.join(', ')}</td></tr>` : ''}
-    ${company_bio ? `<tr><td style="padding: 8px 0; color: #94a3b8; vertical-align: top;">About</td><td style="padding: 8px 0; color: #fff;">${company_bio}</td></tr>` : ''}
-  </table>
-  <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
-    <a href="https://showbizy.ai/admin/verifications" style="display: inline-block; background: linear-gradient(135deg, #F5B731, #E87B35); color: black; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Review in Admin Dashboard →</a>
-  </div>
+        subject: `New Studio signup: ${company_name} — Trust ${trustScore}/100`,
+        headers: {
+          'X-Priority': '1',
+          'X-MSMail-Priority': 'High',
+          'Importance': 'High',
+        },
+        text: `New Studio signup on ShowBizy\n\nTrust Score: ${trustScore}/100 — ${autoVerified ? 'Auto-approved' : 'Needs manual review'}\n\nCompany: ${company_name}\nType: ${company_type}${company_website ? `\nWebsite: ${company_website}` : ''}\nContact: ${name}${contact_role ? ` (${contact_role})` : ''}\nEmail: ${email}${contact_phone ? `\nPhone: ${contact_phone}` : ''}${company_address ? `\nAddress: ${company_address}, ${company_postcode || ''} ${company_country || ''}` : ''}${company_size ? `\nSize: ${company_size} employees` : ''}${years_in_business ? `\nYears: ${years_in_business}` : ''}${streams?.length ? `\nIndustries: ${streams.join(', ')}` : ''}${company_bio ? `\nAbout: ${company_bio}` : ''}\n\nReview: https://showbizy.ai/admin/verifications`,
+        html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+<p><strong>New Studio signup on ShowBizy</strong></p>
+<p><strong>Trust Score: ${trustScore}/100</strong> — ${autoVerified ? 'Auto-approved' : 'Needs manual review'}</p>
+<p>
+Company: ${company_name}<br>
+Type: ${company_type}${company_website ? `<br>Website: <a href="${company_website}">${company_website}</a>` : ''}<br>
+Contact: ${name}${contact_role ? ` (${contact_role})` : ''}<br>
+Email: <a href="mailto:${email}">${email}</a>${contact_phone ? `<br>Phone: ${contact_phone}` : ''}${company_address ? `<br>Address: ${company_address}, ${company_postcode || ''} ${company_country || ''}` : ''}${company_size ? `<br>Size: ${company_size} employees` : ''}${years_in_business ? `<br>Years: ${years_in_business}` : ''}${streams?.length ? `<br>Industries: ${streams.join(', ')}` : ''}${company_bio ? `<br>About: ${company_bio}` : ''}
+</p>
+<p><a href="https://showbizy.ai/admin/verifications">Review in Admin Dashboard</a></p>
 </div>`,
       })
     } catch (adminEmailError) {
