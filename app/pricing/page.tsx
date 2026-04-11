@@ -5,33 +5,33 @@ import { useState, useEffect } from 'react'
 import { detectLocation, detectLocationByIP, formatPrice, PRICING, type LocationData } from '@/lib/location'
 
 const FREE_FEATURES = [
-  '🎬 Create your creative profile',
-  '👀 Browse AI-generated projects',
-  '🔍 View industry job listings',
-  '💬 Community access',
-  '🚫 No credit card required',
+  'Create your creative profile',
+  'Browse AI-generated projects',
+  'View industry job listings',
+  'Community access',
+  'No credit card required',
 ]
 
 const PRO_FEATURES = [
-  '🎯 Apply to AI-generated projects',
-  '🤖 AI-powered project matching for your skills',
-  '💼 Apply to real industry jobs (BBC, Netflix, etc.)',
-  '📄 Upload CV + send cover letters',
-  '⭐ Featured portfolio placement',
-  '✉️ Direct messaging with project leads',
-  '📬 Weekly curated project digest',
-  '🚀 Priority support',
+  'Apply to AI-generated projects',
+  'AI-powered project matching for your skills',
+  'Apply to real industry jobs (BBC, Netflix, etc.)',
+  'Upload CV + send cover letters',
+  'Featured portfolio placement',
+  'Direct messaging with project leads',
+  'Weekly curated project digest',
+  'Priority support',
 ]
 
 const STUDIO_FEATURES = [
-  '🎬 Post your own creative projects',
-  '🤖 AI auto-matches you with the best talent in your city',
-  '📋 Application management dashboard',
-  '✅ Accept / reject candidates with one click',
-  '📊 Track applications by project',
-  '🏆 Verified Studio badge on your profile',
-  '⭐ Featured placement in browse',
-  '🎯 Custom AI brief generation',
+  'Post your own creative projects',
+  'AI auto-matches you with the best talent in your city',
+  'Application management dashboard',
+  'Accept / reject candidates with one click',
+  'Track applications by project',
+  'Verified Studio badge on your profile',
+  'Featured placement in browse',
+  'Custom AI brief generation',
 ]
 
 interface UserData {
