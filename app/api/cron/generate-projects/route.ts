@@ -224,20 +224,93 @@ Return a JSON object:
   }
 }
 
-// After generating projects, email ALL users with daily update
+// ─── Skill Matching Engine ─────────────────────────────────────────────────
+
+// Fuzzy keyword match: "camera operation" matches "camera", "camera operator", etc.
+function skillMatch(userSkill: string, requiredSkill: string): boolean {
+  const u = userSkill.toLowerCase().trim()
+  const r = requiredSkill.toLowerCase().trim()
+  if (u === r) return true
+  if (u.includes(r) || r.includes(u)) return true
+  // Check individual words (only words > 3 chars to avoid false positives)
+  const uWords = u.split(/[\s,/&-]+/).filter(w => w.length > 3)
+  const rWords = r.split(/[\s,/&-]+/).filter(w => w.length > 3)
+  return uWords.some(uw => rWords.some(rw => uw.includes(rw) || rw.includes(uw)))
+}
+
+// Calculate genuine match score (0-100) for a user against a project role
+function calculateMatchScore(
+  userSkills: string[],
+  roleSkillsRequired: string[],
+  userStreams: string[],
+  projectStream: string,
+  userCity: string,
+  projectLocation: string
+): { score: number; matchedSkills: string[] } {
+  // Skill overlap (0-75 points)
+  const matchedSkills: string[] = []
+  if (roleSkillsRequired.length > 0 && userSkills.length > 0) {
+    for (const req of roleSkillsRequired) {
+      if (userSkills.some(us => skillMatch(us, req))) {
+        matchedSkills.push(req)
+      }
+    }
+  }
+  const skillScore = roleSkillsRequired.length > 0
+    ? (matchedSkills.length / roleSkillsRequired.length) * 75
+    : 25 // If no skills_required listed, give base score
+
+  // Stream match (+15)
+  const streamScore = userStreams.includes(projectStream) ? 15 : 0
+
+  // City match (+10)
+  const cityClean = userCity.split(',')[0].trim().toLowerCase()
+  const locClean = projectLocation.toLowerCase()
+  const cityScore = cityClean && locClean.includes(cityClean) ? 10 : 0
+
+  return {
+    score: Math.round(skillScore + streamScore + cityScore),
+    matchedSkills,
+  }
+}
+
+interface ProjectWithRoles {
+  id: string
+  title: string
+  stream: string
+  location: string
+  description: string
+  roles: { role: string; skills_required: string[] }[]
+}
+
+// ─── Two-Layer Matching & Notification ─────────────────────────────────────
+
 async function matchAndNotifyUsers(projects: { city: string; project: string; id: string }[]) {
-  // Fetch all generated project details
-  const projectDetails: { id: string; title: string; stream: string; location: string; description: string }[] = []
+  // Fetch generated projects WITH their roles
+  const projectsWithRoles: ProjectWithRoles[] = []
   for (const proj of projects) {
     const { data: project } = await supabaseAdmin
       .from('showbizy_projects')
       .select('id, title, stream, location, description')
       .eq('id', proj.id)
       .single()
-    if (project) projectDetails.push(project)
+    if (!project) continue
+
+    const { data: roles } = await supabaseAdmin
+      .from('showbizy_project_roles')
+      .select('role, skills_required')
+      .eq('project_id', project.id)
+
+    projectsWithRoles.push({
+      ...project,
+      roles: (roles || []).map((r: { role: string; skills_required?: string[] }) => ({
+        role: r.role,
+        skills_required: r.skills_required || [],
+      })),
+    })
   }
 
-  if (projectDetails.length === 0) return
+  if (projectsWithRoles.length === 0) return
 
   // Fetch ALL users
   const { data: allUsers } = await supabaseAdmin
@@ -255,92 +328,161 @@ async function matchAndNotifyUsers(projects: { city: string; project: string; id
     if (emailed.has(user.email)) continue
     emailed.add(user.email)
 
-    const userCity = (user.city || '').split(',')[0].trim().toLowerCase()
     const isPro = user.is_pro || user.plan === 'pro' || user.plan === 'studio'
+    const userSkills = user.skills || []
+    const userStreams = user.streams || []
+    const userCity = user.city || ''
 
-    // Find projects matching this user's city or streams
-    const matched = projectDetails.filter(p => {
-      const cityMatch = userCity && p.location.toLowerCase().includes(userCity)
-      const streamMatch = user.streams?.length && user.streams.includes(p.stream)
-      return cityMatch || streamMatch
-    })
+    if (isPro) {
+      // ── PRO USERS: Genuine skill-based matching ──
+      // Find best role match across all new projects
+      let bestScore = 0
+      let bestRole = ''
+      let bestProject: ProjectWithRoles | null = null
+      const genuineMatches: { project: ProjectWithRoles; role: string; score: number; matchedSkills: string[] }[] = []
 
-    // Save matches to DB for matched users
-    if (matched.length > 0) {
-      const matchRecords = matched.map(p => ({
-        user_id: user.id,
-        project_id: p.id,
-        score: 0.80,
-        status: 'pending',
-      }))
-      try {
-        await supabaseAdmin.from('showbizy_matches').insert(matchRecords)
-      } catch {
-        // Ignore duplicates
+      for (const project of projectsWithRoles) {
+        for (const role of project.roles) {
+          const { score, matchedSkills } = calculateMatchScore(
+            userSkills, role.skills_required, userStreams,
+            project.stream, userCity, project.location
+          )
+          if (score >= 40) {
+            genuineMatches.push({ project, role: role.role, score, matchedSkills })
+            if (score > bestScore) {
+              bestScore = score
+              bestRole = role.role
+              bestProject = project
+            }
+          }
+        }
       }
-    }
 
-    // FREE users with a match: send targeted conversion email (not generic)
-    if (!isPro && matched.length > 0) {
+      // Save genuine matches to DB with real scores
+      for (const m of genuineMatches) {
+        try {
+          await supabaseAdmin.from('showbizy_matches').insert({
+            user_id: user.id,
+            project_id: m.project.id,
+            score: m.score / 100, // Store as 0-1
+            status: 'pending',
+          })
+        } catch { /* ignore duplicates */ }
+      }
+
+      // Email Pro user with their best match + role
+      if (bestProject && bestScore >= 40) {
+        const scoreLabel = bestScore >= 75 ? 'Strong match' : bestScore >= 50 ? 'Good match' : 'Possible match'
+        try {
+          await transporter.sendMail({
+            from: '"ShowBizy" <admin@showbizy.ai>',
+            to: user.email,
+            subject: `${scoreLabel}: ${bestRole} on "${bestProject.title}" (${bestScore}%)`,
+            headers: { 'X-Priority': '1', 'Importance': 'High' },
+            text: `Hey ${user.name},\n\nOur AI matched you to a new project:\n\n${bestProject.title}\nRole: ${bestRole}\nMatch score: ${bestScore}%\nLocation: ${bestProject.location}\nStream: ${bestProject.stream}\n\nView and apply: https://showbizy.ai/projects/${bestProject.id}\n\n${genuineMatches.length > 1 ? `Plus ${genuineMatches.length - 1} more match${genuineMatches.length > 2 ? 'es' : ''}: https://showbizy.ai/projects` : ''}\n\n— ShowBizy`,
+            html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>Our AI matched you to a new project:</p>
+<div style="padding:16px;background:#f8f8f8;border-radius:8px;border-left:4px solid ${bestScore >= 75 ? '#22c55e' : bestScore >= 50 ? '#f59e0b' : '#94a3b8'};margin:16px 0;">
+<strong>${bestProject.title}</strong><br>
+Role: <strong>${bestRole}</strong><br>
+Match: <strong style="color:${bestScore >= 75 ? '#22c55e' : bestScore >= 50 ? '#f59e0b' : '#94a3b8'};">${bestScore}% — ${scoreLabel}</strong><br>
+${bestProject.location} — ${bestProject.stream}
+</div>
+<p><a href="https://showbizy.ai/projects/${bestProject.id}" style="color:#7c3aed;font-weight:bold;">View & Apply</a></p>
+${genuineMatches.length > 1 ? `<p style="color:#666;">Plus ${genuineMatches.length - 1} more match${genuineMatches.length > 2 ? 'es' : ''} — <a href="https://showbizy.ai/projects" style="color:#7c3aed;">browse all</a></p>` : ''}
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+          })
+          sent++
+        } catch (emailErr) {
+          console.error(`Failed to send pro match email to ${user.email}:`, emailErr)
+        }
+      } else {
+        // Pro user but no strong match — show new projects anyway
+        try {
+          const top = projectsWithRoles.slice(0, 3)
+          await transporter.sendMail({
+            from: '"ShowBizy" <admin@showbizy.ai>',
+            to: user.email,
+            subject: `${top.length} new project${top.length > 1 ? 's' : ''} just dropped`,
+            headers: { 'X-Priority': '1', 'Importance': 'High' },
+            text: `Hey ${user.name},\n\nNew projects on ShowBizy:\n\n${top.map(p => `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`).join('\n')}\n\nBrowse and apply: https://showbizy.ai/projects\n\n— ShowBizy`,
+            html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>New projects on ShowBizy:</p>
+<ul style="padding-left:20px;">${top.map(p => `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br><a href="https://showbizy.ai/projects/${p.id}" style="color:#7c3aed;">View & apply</a></li>`).join('')}</ul>
+<p><a href="https://showbizy.ai/projects" style="color:#7c3aed;font-weight:bold;">Browse all projects</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+          })
+          sent++
+        } catch (emailErr) {
+          console.error(`Failed to send pro general email to ${user.email}:`, emailErr)
+        }
+      }
+
+    } else {
+      // ── FREE USERS: Broad matching (city/stream) + conversion pressure ──
+      // Keep it generous — match on city OR stream so everyone gets emails
+      const broadMatch = projectsWithRoles.filter(p => {
+        const cityClean = userCity.split(',')[0].trim().toLowerCase()
+        const cityMatch = cityClean && p.location.toLowerCase().includes(cityClean)
+        const streamMatch = userStreams.length > 0 && userStreams.includes(p.stream)
+        return cityMatch || streamMatch
+      })
+
+      // Save broad matches to DB (vague score for free users)
+      for (const p of broadMatch) {
+        try {
+          await supabaseAdmin.from('showbizy_matches').insert({
+            user_id: user.id,
+            project_id: p.id,
+            score: 0.5, // Vague — they don't see this
+            status: 'pending',
+          })
+        } catch { /* ignore duplicates */ }
+      }
+
+      // Pick projects to show: broad matches or all new projects
+      const projectsToShow = broadMatch.length > 0 ? broadMatch.slice(0, 3) : projectsWithRoles.slice(0, 3)
+      const matchText = broadMatch.length > 0
+        ? `Our AI found ${broadMatch.length} project${broadMatch.length > 1 ? 's' : ''} in your area that need someone like you`
+        : 'New creative projects just dropped on ShowBizy'
+
       try {
         await sendMatchConversionEmail(
           { name: user.name, email: user.email },
-          { id: matched[0].id, title: matched[0].title, stream: matched[0].stream, location: matched[0].location }
+          { id: projectsToShow[0].id, title: projectsToShow[0].title, stream: projectsToShow[0].stream, location: projectsToShow[0].location }
         )
         sent++
-      } catch (emailErr) {
-        console.error(`Failed to send match conversion email to ${user.email}:`, emailErr)
-      }
-      await new Promise(resolve => setTimeout(resolve, 500))
-      continue // Skip generic email for this user
-    }
-
-    // Pick projects to show: matched first, then any new ones
-    const projectsToShow = matched.length > 0 ? matched.slice(0, 3) : projectDetails.slice(0, 3)
-
-    // Build email content based on user type
-    const projectListText = projectsToShow.map(p =>
-      `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`
-    ).join('\n')
-
-    const projectListHtml = projectsToShow.map(p =>
-      `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
-      <a href="https://showbizy.ai/projects/${p.id}" style="color:#7c3aed;">${isPro ? 'View & apply' : 'View project'}</a></li>`
-    ).join('')
-
-    const subject = matched.length > 0
-      ? `${matched.length} new project${matched.length > 1 ? 's' : ''} matching your skills`
-      : `${projectDetails.length} new creative project${projectDetails.length > 1 ? 's' : ''} just dropped`
-
-    const ctaText = isPro
-      ? 'Browse and apply to all projects: https://showbizy.ai/projects'
-      : 'Upgrade to Pro to apply and get matched: https://showbizy.ai/pricing'
-
-    const ctaHtml = isPro
-      ? `<p><a href="https://showbizy.ai/projects" style="color:#7c3aed;font-weight:bold;">Browse and apply to all projects</a></p>`
-      : `<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;"><strong>Upgrade to Pro</strong> to apply to projects and get AI-matched to the best opportunities.<br><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;">View Pro plans</a></p>`
-
-    try {
-      await transporter.sendMail({
-        from: '"ShowBizy" <admin@showbizy.ai>',
-        to: user.email,
-        subject,
-        headers: { 'X-Priority': '1', 'Importance': 'High' },
-        text: `Hey ${user.name},\n\n${matched.length > 0 ? `We found ${matched.length} new project${matched.length > 1 ? 's' : ''} matching your skills:` : 'New creative projects just dropped on ShowBizy:'}\n\n${projectListText}\n\n${ctaText}\n\n— ShowBizy`,
-        html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+      } catch {
+        // Fallback: generic email
+        try {
+          await transporter.sendMail({
+            from: '"ShowBizy" <admin@showbizy.ai>',
+            to: user.email,
+            subject: broadMatch.length > 0
+              ? `${broadMatch.length} project${broadMatch.length > 1 ? 's' : ''} in your area need${broadMatch.length === 1 ? 's' : ''} someone like you`
+              : `New creative projects just dropped`,
+            headers: { 'X-Priority': '1', 'Importance': 'High' },
+            text: `Hey ${user.name},\n\n${matchText}:\n\n${projectsToShow.map(p => `- ${p.title} (${p.stream}, ${p.location})`).join('\n')}\n\nUpgrade to Pro to see your match score and apply: https://showbizy.ai/pricing\n\n— ShowBizy`,
+            html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
 <p>Hey ${user.name},</p>
-<p>${matched.length > 0 ? `We found <strong>${matched.length} new project${matched.length > 1 ? 's' : ''}</strong> matching your skills:` : 'New creative projects just dropped on ShowBizy:'}</p>
-<ul style="padding-left:20px;">${projectListHtml}</ul>
-${ctaHtml}
+<p>${matchText}:</p>
+<ul style="padding-left:20px;">${projectsToShow.map(p => `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}</li>`).join('')}</ul>
+<p style="margin-top:16px;padding:14px;background:#7c3aed;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#fff;font-weight:bold;font-size:16px;text-decoration:none;">Upgrade to Pro — see your match score & apply</a></p>
 <p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
 </div>`,
-      })
-      sent++
-    } catch (emailErr) {
-      console.error(`Failed to send daily email to ${user.email}:`, emailErr)
+          })
+          sent++
+        } catch (emailErr) {
+          console.error(`Failed to send free user email to ${user.email}:`, emailErr)
+        }
+      }
     }
 
-    // Rate limit: 500ms between emails
+    // Rate limit
     await new Promise(resolve => setTimeout(resolve, 500))
   }
 
