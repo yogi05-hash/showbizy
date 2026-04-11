@@ -225,79 +225,110 @@ Return a JSON object:
   }
 }
 
-// Match newly generated projects with users in same city/stream and send notifications
+// After generating projects, email ALL users with daily update
 async function matchAndNotifyUsers(projects: { city: string; project: string; id: string }[]) {
+  // Fetch all generated project details
+  const projectDetails: { id: string; title: string; stream: string; location: string; description: string }[] = []
   for (const proj of projects) {
-    // Fetch full project details
     const { data: project } = await supabaseAdmin
       .from('showbizy_projects')
       .select('id, title, stream, location, description')
       .eq('id', proj.id)
       .single()
+    if (project) projectDetails.push(project)
+  }
 
-    if (!project) continue
+  if (projectDetails.length === 0) return
 
-    // Find users in same city with matching streams
-    const { data: matchedUsers } = await supabaseAdmin
-      .from('showbizy_users')
-      .select('id, name, email, city, streams, skills, is_pro')
-      .ilike('city', `%${proj.city.split(',')[0]}%`)
-      .limit(30)
+  // Fetch ALL users
+  const { data: allUsers } = await supabaseAdmin
+    .from('showbizy_users')
+    .select('id, name, email, city, streams, skills, is_pro, plan')
+    .not('email', 'is', null)
+    .limit(200)
 
-    if (!matchedUsers?.length) continue
+  if (!allUsers?.length) return
 
-    // Filter for stream match
-    const relevantUsers = matchedUsers.filter((u: { streams?: string[] }) =>
-      u.streams && u.streams.includes(project.stream)
-    )
+  const emailed = new Set<string>()
+  let sent = 0
 
-    if (!relevantUsers.length) continue
+  for (const user of allUsers as { id: string; name: string; email: string; city?: string; streams?: string[]; skills?: string[]; is_pro?: boolean; plan?: string }[]) {
+    if (emailed.has(user.email)) continue
+    emailed.add(user.email)
 
-    // Save matches to DB
-    const matchRecords = relevantUsers.map((u: { id: string }) => ({
-      user_id: u.id,
-      project_id: project.id,
-      score: 0.80,
-      status: 'pending',
-    }))
+    const userCity = (user.city || '').split(',')[0].trim().toLowerCase()
+    const isPro = user.is_pro || user.plan === 'pro' || user.plan === 'studio'
+
+    // Find projects matching this user's city or streams
+    const matched = projectDetails.filter(p => {
+      const cityMatch = userCity && p.location.toLowerCase().includes(userCity)
+      const streamMatch = user.streams?.length && user.streams.includes(p.stream)
+      return cityMatch || streamMatch
+    })
+
+    // Save matches to DB for matched users
+    if (matched.length > 0) {
+      const matchRecords = matched.map(p => ({
+        user_id: user.id,
+        project_id: p.id,
+        score: 0.80,
+        status: 'pending',
+      }))
+      try {
+        await supabaseAdmin.from('showbizy_matches').insert(matchRecords)
+      } catch {
+        // Ignore duplicates
+      }
+    }
+
+    // Pick projects to show: matched first, then any new ones
+    const projectsToShow = matched.length > 0 ? matched.slice(0, 3) : projectDetails.slice(0, 3)
+
+    // Build email content based on user type
+    const projectListText = projectsToShow.map(p =>
+      `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`
+    ).join('\n')
+
+    const projectListHtml = projectsToShow.map(p =>
+      `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
+      <a href="https://showbizy.ai/projects/${p.id}" style="color:#7c3aed;">${isPro ? 'View & apply' : 'View project'}</a></li>`
+    ).join('')
+
+    const subject = matched.length > 0
+      ? `${matched.length} new project${matched.length > 1 ? 's' : ''} matching your skills`
+      : `${projectDetails.length} new creative project${projectDetails.length > 1 ? 's' : ''} just dropped`
+
+    const ctaText = isPro
+      ? 'Browse and apply to all projects: https://showbizy.ai/projects'
+      : 'Upgrade to Pro to apply and get matched: https://showbizy.ai/pricing'
+
+    const ctaHtml = isPro
+      ? `<p><a href="https://showbizy.ai/projects" style="color:#7c3aed;font-weight:bold;">Browse and apply to all projects</a></p>`
+      : `<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;"><strong>Upgrade to Pro</strong> to apply to projects and get AI-matched to the best opportunities.<br><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;">View Pro plans</a></p>`
 
     try {
-      await supabaseAdmin.from('showbizy_matches').insert(matchRecords)
-    } catch {
-      // Ignore duplicate match errors
-    }
-
-    // Send notification emails (top 10 per project)
-    for (const user of relevantUsers.slice(0, 10) as { id: string; name: string; email: string; is_pro?: boolean }[]) {
-      try {
-        await transporter.sendMail({
-          from: '"ShowBizy" <admin@showbizy.ai>',
-          to: user.email,
-          subject: `New project in your area: ${project.title}`,
-          headers: { 'X-Priority': '1', 'Importance': 'High' },
-          text: `Hey ${user.name},\n\nA new project just dropped in ${proj.city} that matches your skills:\n\n${project.title}\nStream: ${project.stream}\nLocation: ${project.location}\n\n${project.description?.slice(0, 200) || ''}\n\n${user.is_pro ? `View and apply: https://showbizy.ai/projects/${project.id}` : `Upgrade to Pro to apply: https://showbizy.ai/pricing`}\n\n— ShowBizy`,
-          html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6;">
+      await transporter.sendMail({
+        from: '"ShowBizy" <admin@showbizy.ai>',
+        to: user.email,
+        subject,
+        headers: { 'X-Priority': '1', 'Importance': 'High' },
+        text: `Hey ${user.name},\n\n${matched.length > 0 ? `We found ${matched.length} new project${matched.length > 1 ? 's' : ''} matching your skills:` : 'New creative projects just dropped on ShowBizy:'}\n\n${projectListText}\n\n${ctaText}\n\n— ShowBizy`,
+        html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
 <p>Hey ${user.name},</p>
-<p>A new project just dropped in <strong>${proj.city}</strong> that matches your skills:</p>
-<p>
-<strong>${project.title}</strong><br>
-Stream: ${project.stream}<br>
-Location: ${project.location}
-</p>
-<p>${project.description?.slice(0, 200) || ''}${(project.description?.length || 0) > 200 ? '...' : ''}</p>
-<p>${user.is_pro
-  ? `<a href="https://showbizy.ai/projects/${project.id}">View and apply</a>`
-  : `<a href="https://showbizy.ai/pricing">Upgrade to Pro to apply</a>`
-}</p>
-<p style="color:#666; font-size: 12px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+<p>${matched.length > 0 ? `We found <strong>${matched.length} new project${matched.length > 1 ? 's' : ''}</strong> matching your skills:` : 'New creative projects just dropped on ShowBizy:'}</p>
+<ul style="padding-left:20px;">${projectListHtml}</ul>
+${ctaHtml}
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
 </div>`,
-        })
-      } catch (emailErr) {
-        console.error(`Failed to send match email to ${user.email}:`, emailErr)
-      }
-
-      // Rate limit emails
-      await new Promise(resolve => setTimeout(resolve, 500))
+      })
+      sent++
+    } catch (emailErr) {
+      console.error(`Failed to send daily email to ${user.email}:`, emailErr)
     }
+
+    // Rate limit: 500ms between emails
+    await new Promise(resolve => setTimeout(resolve, 500))
   }
+
+  console.log(`[cron] Daily emails sent: ${sent}/${allUsers.length}`)
 }
