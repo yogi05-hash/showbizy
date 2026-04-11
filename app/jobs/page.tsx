@@ -168,7 +168,7 @@ export default function JobsPage() {
         {/* Header */}
         <div className="mb-8">
           <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">🔥 Industry Jobs</span>
-          <h1 className="text-4xl md:text-5xl font-bold mt-2 mb-3">Real entertainment jobs</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mt-2 mb-3">Creative industry jobs</h1>
           <p className="text-white/50 text-lg max-w-xl">
             Live opportunities from top studios and production companies.
             {!isPro && ' Upgrade to Pro to view details and apply.'}
