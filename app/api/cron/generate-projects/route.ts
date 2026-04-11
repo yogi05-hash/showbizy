@@ -55,8 +55,8 @@ async function generateProjects() {
 
     const generatedProjects: { city: string; project: string; id: string }[] = []
 
-    // Generate 1 project per city (up to 2 cities per run to avoid timeout)
-    for (const city of uniqueCities.sort(() => Math.random() - 0.5).slice(0, 2)) {
+    // Generate 1 project per city (up to 3 cities per run, randomized)
+    for (const city of uniqueCities.sort(() => Math.random() - 0.5).slice(0, 3)) {
       try {
         // Fetch talent profiles in this city
         const { data: talentInCity } = await supabaseAdmin
