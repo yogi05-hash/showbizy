@@ -233,24 +233,6 @@ export default function PricingPage() {
           </div>
         )}
 
-        {/* Social Proof */}
-        {stats.projects > 0 && (
-          <div className="flex flex-wrap justify-center gap-8 mb-12 text-center">
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.projects}+</p>
-              <p className="text-xs text-white/40">AI projects generated</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">Daily</p>
-              <p className="text-xs text-white/40">new projects created by AI</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">8</p>
-              <p className="text-xs text-white/40">creative streams covered</p>
-            </div>
-          </div>
-        )}
-
         {/* Pricing Cards */}
         <div className={`grid ${gridCols} gap-8 mx-auto`}>
           {/* Free */}
