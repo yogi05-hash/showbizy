@@ -40,8 +40,13 @@ const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
 
 // City mappings by timezone patterns
 const TIMEZONE_MAPPING = {
-  // India
+  // India (both modern and legacy timezone names)
   'Asia/Kolkata': {
+    cities: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'],
+    country: 'India',
+    currency: 'INR' as CurrencyCode,
+  },
+  'Asia/Calcutta': {
     cities: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'],
     country: 'India',
     currency: 'INR' as CurrencyCode,
@@ -182,28 +187,88 @@ export function detectLocation(): LocationData {
   }
 }
 
+// City lists by country for showing variety on homepage
+const COUNTRY_CITIES: Record<string, string[]> = {
+  'India': ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'],
+  'USA': ['Los Angeles', 'New York', 'Chicago', 'Austin', 'Atlanta'],
+  'UK': ['London', 'Manchester', 'Birmingham'],
+  'Germany': ['Berlin', 'Amsterdam', 'Paris', 'Barcelona'],
+  'France': ['Paris', 'Berlin', 'Amsterdam', 'Barcelona'],
+  'Netherlands': ['Amsterdam', 'Berlin', 'Paris', 'Barcelona'],
+  'Spain': ['Barcelona', 'Paris', 'Berlin', 'Amsterdam'],
+  'Europe': ['Berlin', 'Paris', 'Amsterdam', 'Barcelona'],
+  'Australia': ['Sydney', 'Melbourne', 'Brisbane'],
+  'Canada': ['Toronto', 'Vancouver', 'Montreal'],
+  'UAE': ['Dubai', 'Abu Dhabi'],
+  'Nigeria': ['Lagos', 'Abuja'],
+  'Singapore': ['Singapore'],
+}
+
 // Helper function to get all cities for a detected location (for showing variety)
 export function getCitiesForLocation(location: LocationData): string[] {
+  // Use country from detected location (works with both timezone and IP detection)
+  const countryCities = COUNTRY_CITIES[location.country]
+  if (countryCities) return [...countryCities]
+
+  // Fallback: try timezone
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    
-    // Try exact match first
     const exactMatch = TIMEZONE_MAPPING[timezone as keyof typeof TIMEZONE_MAPPING]
-    if (exactMatch) {
-      return [...exactMatch.cities]
-    }
-    
-    // Try pattern matching
+    if (exactMatch) return [...exactMatch.cities]
     for (const { pattern, cities } of TIMEZONE_PATTERNS) {
-      if (pattern.test(timezone)) {
-        return [...cities]
+      if (pattern.test(timezone)) return [...cities]
+    }
+  } catch {}
+
+  return [location.city, 'London', 'New York']
+}
+
+// ─── IP-based geolocation (primary, more reliable than timezone) ──────────
+
+const IP_COUNTRY_MAP: Record<string, { city: string; country: string; currency: CurrencyCode }> = {
+  IN: { city: 'Mumbai', country: 'India', currency: 'INR' },
+  US: { city: 'Los Angeles', country: 'USA', currency: 'USD' },
+  GB: { city: 'London', country: 'UK', currency: 'GBP' },
+  DE: { city: 'Berlin', country: 'Germany', currency: 'EUR' },
+  FR: { city: 'Paris', country: 'France', currency: 'EUR' },
+  ES: { city: 'Barcelona', country: 'Spain', currency: 'EUR' },
+  NL: { city: 'Amsterdam', country: 'Netherlands', currency: 'EUR' },
+  IT: { city: 'Rome', country: 'Italy', currency: 'EUR' },
+  AU: { city: 'Sydney', country: 'Australia', currency: 'USD' },
+  CA: { city: 'Toronto', country: 'Canada', currency: 'USD' },
+  AE: { city: 'Dubai', country: 'UAE', currency: 'USD' },
+  SG: { city: 'Singapore', country: 'Singapore', currency: 'USD' },
+  NG: { city: 'Lagos', country: 'Nigeria', currency: 'USD' },
+  ZA: { city: 'Cape Town', country: 'South Africa', currency: 'USD' },
+  KE: { city: 'Nairobi', country: 'Kenya', currency: 'USD' },
+}
+
+// Async IP detection — call this on page load, update state when ready
+export async function detectLocationByIP(): Promise<LocationData | null> {
+  try {
+    const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) })
+    if (!res.ok) return null
+    const data = await res.json()
+    const countryCode = (data.country_code || '').toUpperCase()
+    const mapped = IP_COUNTRY_MAP[countryCode]
+    if (mapped) {
+      return {
+        city: data.city || mapped.city,
+        country: mapped.country,
+        currency: { code: mapped.currency, symbol: CURRENCY_SYMBOLS[mapped.currency] },
       }
     }
-    
-    // Fallback
-    return ['London', 'Manchester', 'Birmingham']
+    // Unknown country — check if Europe
+    if (data.continent_code === 'EU') {
+      return {
+        city: data.city || 'Berlin',
+        country: data.country_name || 'Europe',
+        currency: { code: 'EUR', symbol: '€' },
+      }
+    }
+    return null // Fall back to timezone detection
   } catch {
-    return ['London', 'Manchester', 'Birmingham']
+    return null // Network error — fall back to timezone
   }
 }
 

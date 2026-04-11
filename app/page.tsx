@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { detectLocation, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
+import { detectLocation, detectLocationByIP, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 import { FadeIn, StaggerContainer, StaggerItem, TiltCard, AnimatedCounter } from '@/components/MotionWrap'
 import { motion } from 'motion/react'
 import dynamic from 'next/dynamic'
@@ -206,12 +206,21 @@ export default function Home() {
     const user = localStorage.getItem('showbizy_user')
     if (user) setIsLoggedIn(true)
 
-    // Detect location
+    // Detect location — timezone first (instant), then IP (accurate, async)
     const detectedLocation = detectLocation()
     setLocation(detectedLocation)
-    
     const detectedCities = getCitiesForLocation(detectedLocation)
     setCities(detectedCities)
+
+    // IP geolocation override (more reliable than timezone for remote desktops)
+    detectLocationByIP().then(ipLoc => {
+      if (ipLoc) {
+        setLocation(ipLoc)
+        // Update cities based on IP-detected location
+        const ipCities = getCitiesForLocation(ipLoc)
+        if (ipCities.length > 0) setCities(ipCities)
+      }
+    })
 
     // Fetch live projects from database — prioritize user's detected location
     fetch('/api/projects')

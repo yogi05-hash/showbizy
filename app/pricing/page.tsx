@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { detectLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
+import { detectLocation, detectLocationByIP, formatPrice, PRICING, type LocationData } from '@/lib/location'
 
 const FREE_FEATURES = [
   '🎬 Create your creative profile',
@@ -57,9 +57,12 @@ export default function PricingPage() {
   })
 
   useEffect(() => {
-    // Detect location
+    // Detect location — IP first (reliable), timezone fallback
     const detectedLocation = detectLocation()
     setLocation(detectedLocation)
+    detectLocationByIP().then(ipLoc => {
+      if (ipLoc) setLocation(ipLoc)
+    })
     const stored = localStorage.getItem('showbizy_user')
     if (stored) {
       try {
