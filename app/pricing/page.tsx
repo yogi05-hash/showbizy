@@ -271,7 +271,7 @@ export default function PricingPage() {
               href="/signup"
               className="block text-center border border-white/10 py-3.5 rounded-xl font-semibold text-sm hover:bg-white/5 transition"
             >
-              Get Started
+              {user ? 'Your Current Plan' : 'Free'}
             </Link>
           </div>
 
@@ -312,7 +312,7 @@ export default function PricingPage() {
                       Loading...
                     </span>
                   ) : (
-                    'Upgrade to Pro'
+                    user ? 'Upgrade to Pro' : 'Pro'
                   )}
                 </button>
               )}
@@ -353,7 +353,7 @@ export default function PricingPage() {
                     Loading...
                   </span>
                 ) : (
-                  'Upgrade to Studio'
+                  user ? 'Upgrade to Studio' : 'Studio'
                 )}
               </button>
             )}
