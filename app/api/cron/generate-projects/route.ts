@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { transporter } from '@/lib/email'
+import { transporter, sendMatchConversionEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes (Vercel Pro), falls back to plan limit
@@ -278,6 +278,21 @@ async function matchAndNotifyUsers(projects: { city: string; project: string; id
       } catch {
         // Ignore duplicates
       }
+    }
+
+    // FREE users with a match: send targeted conversion email (not generic)
+    if (!isPro && matched.length > 0) {
+      try {
+        await sendMatchConversionEmail(
+          { name: user.name, email: user.email },
+          { id: matched[0].id, title: matched[0].title, stream: matched[0].stream, location: matched[0].location }
+        )
+        sent++
+      } catch (emailErr) {
+        console.error(`Failed to send match conversion email to ${user.email}:`, emailErr)
+      }
+      await new Promise(resolve => setTimeout(resolve, 500))
+      continue // Skip generic email for this user
     }
 
     // Pick projects to show: matched first, then any new ones

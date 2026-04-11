@@ -49,6 +49,7 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState<UserData | null>(null)
+  const [stats, setStats] = useState({ users: 0, projects: 0, matches: 0 })
   const [location, setLocation] = useState<LocationData>({
     city: 'London',
     country: 'UK',
@@ -77,6 +78,13 @@ export default function PricingPage() {
           .catch(() => { /* use cached data */ })
       } catch { /* no valid user data */ }
     }
+    // Fetch platform stats for social proof
+    fetch('/api/projects')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.projects) setStats(prev => ({ ...prev, projects: d.projects.length }))
+      })
+      .catch(() => {})
   }, [])
 
   // Smart pricing logic — show only relevant cards based on user state
@@ -218,6 +226,24 @@ export default function PricingPage() {
         {error && (
           <div className="max-w-lg mx-auto mb-8 bg-red-500/10 border border-red-500/20 rounded-xl px-6 py-4 text-red-400 text-center text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Social Proof */}
+        {stats.projects > 0 && (
+          <div className="flex flex-wrap justify-center gap-8 mb-12 text-center">
+            <div>
+              <p className="text-2xl font-bold text-white">{stats.projects}+</p>
+              <p className="text-xs text-white/40">AI projects generated</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">Daily</p>
+              <p className="text-xs text-white/40">new projects created by AI</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">8</p>
+              <p className="text-xs text-white/40">creative streams covered</p>
+            </div>
           </div>
         )}
 

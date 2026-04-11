@@ -48,6 +48,7 @@ function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
+  const [matchCount, setMatchCount] = useState(0)
   const [matchedProjects, setMatchedProjects] = useState<any[]>([])
   const [activeProjects, setActiveProjects] = useState<any[]>([])
   const [matchesLoading, setMatchesLoading] = useState(false)
@@ -114,6 +115,7 @@ function DashboardPage() {
         if (response.ok) {
           const data = await response.json()
           const projects = data.matches?.map((match: any) => match.showbizy_projects) || []
+          setMatchCount(projects.length)
           setMatchedProjects(projects.slice(0, 3))
         }
       } catch (error) {
@@ -326,21 +328,35 @@ function DashboardPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Upgrade to Pro CTA */}
+            {/* Upgrade to Pro — FOMO banner with real match count */}
             {!user.is_pro && (
               <Link
                 href="/pricing"
                 className="block bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 hover:border-purple-500/50 transition group"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">⚡</span>
-                  <h3 className="font-bold text-lg">Upgrade to Pro</h3>
-                </div>
-                <p className="text-white/50 text-sm mb-3">
-                  Unlock unlimited applications, priority matching, and more.
-                </p>
+                {matchCount > 0 ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-2xl">🔒</span>
+                      <h3 className="font-bold text-lg">You&apos;ve been matched to {matchCount} project{matchCount !== 1 ? 's' : ''}</h3>
+                    </div>
+                    <p className="text-white/50 text-sm mb-3">
+                      Our AI found {matchCount} project{matchCount !== 1 ? 's' : ''} matching your skills — but you need Pro to apply. Don&apos;t miss out.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-2xl">⚡</span>
+                      <h3 className="font-bold text-lg">Upgrade to Pro</h3>
+                    </div>
+                    <p className="text-white/50 text-sm mb-3">
+                      Get matched to projects, apply to real jobs, and unlock priority AI matching.
+                    </p>
+                  </>
+                )}
                 <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg text-sm font-semibold group-hover:opacity-90 transition">
-                  {proPrice}/month →
+                  Upgrade to Pro — {proPrice}/month →
                 </span>
               </Link>
             )}

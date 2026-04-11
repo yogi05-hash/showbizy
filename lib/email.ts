@@ -607,3 +607,163 @@ export async function sendStudioUpgradeEmail(
     throw err
   }
 }
+
+// ─── 10. Drip Sequence Emails (plain text for inbox placement) ────────────
+
+interface DripProject {
+  id: string
+  title: string
+  stream: string
+  location: string
+}
+
+// Day 1: "AI is scanning your area"
+export async function sendDripDay1(user: { name: string; email: string; city?: string }): Promise<void> {
+  const city = user.city || 'your area'
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `${user.name}, our AI is scanning ${city} for you`,
+    headers: { 'X-Priority': '1', 'Importance': 'High' },
+    text: `Hey ${user.name},\n\nWelcome to ShowBizy! Our AI is now actively scanning ${city} for creative projects that match your skills.\n\nHere's what happens next:\n- We generate new AI projects in your area every day\n- When a project matches your skills, you'll be the first to know\n- Pro members can apply directly and get priority matching\n\nBrowse current projects: https://showbizy.ai/projects\n\n— ShowBizy`,
+    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>Welcome to ShowBizy! Our AI is now actively scanning <strong>${city}</strong> for creative projects that match your skills.</p>
+<p>Here's what happens next:</p>
+<ul>
+<li>We generate new AI projects in your area every day</li>
+<li>When a project matches your skills, you'll be the first to know</li>
+<li>Pro members can apply directly and get priority matching</li>
+</ul>
+<p><a href="https://showbizy.ai/projects" style="color:#7c3aed;font-weight:bold;">Browse current projects</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+  })
+}
+
+// Day 3: "AI found projects for you"
+export async function sendDripDay3(
+  user: { name: string; email: string; city?: string },
+  matchedProjects: DripProject[]
+): Promise<void> {
+  const count = matchedProjects.length
+  const city = user.city || 'your area'
+
+  const projectListHtml = matchedProjects.slice(0, 3).map(p =>
+    `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
+    <a href="https://showbizy.ai/projects/${p.id}" style="color:#7c3aed;">View project</a></li>`
+  ).join('')
+
+  const projectListText = matchedProjects.slice(0, 3).map(p =>
+    `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`
+  ).join('\n')
+
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `${count} project${count > 1 ? 's' : ''} found for you in ${city}`,
+    headers: { 'X-Priority': '1', 'Importance': 'High' },
+    text: `Hey ${user.name},\n\nOur AI found ${count} project${count > 1 ? 's' : ''} in ${city} that match your skills:\n\n${projectListText}\n\nUpgrade to Pro to apply and get priority matching: https://showbizy.ai/pricing\n\n— ShowBizy`,
+    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>Our AI found <strong>${count} project${count > 1 ? 's' : ''}</strong> in ${city} that match your skills:</p>
+<ul style="padding-left:20px;">${projectListHtml}</ul>
+<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;"><strong>Upgrade to Pro</strong> to apply directly and get priority matching.<br><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;">View Pro plans — £9/mo</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+  })
+}
+
+// Day 7: "You've been matched but can't apply"
+export async function sendDripDay7(
+  user: { name: string; email: string; city?: string },
+  totalMatches: number,
+  topProjects: DripProject[]
+): Promise<void> {
+  const city = user.city || 'your area'
+
+  const projectListHtml = topProjects.slice(0, 3).map(p =>
+    `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
+    <span style="color:#999;">🔒 <em>Pro required to apply</em></span></li>`
+  ).join('')
+
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `${user.name}, you've been matched to ${totalMatches} projects — but can't apply yet`,
+    headers: { 'X-Priority': '1', 'Importance': 'High' },
+    text: `Hey ${user.name},\n\nIn the last week, our AI matched you to ${totalMatches} projects in ${city}.\n\nBut as a free member, you can't apply to any of them.\n\nHere's what Pro members get:\n- Apply to all AI-generated projects\n- Apply to real industry jobs (BBC, Netflix, etc.)\n- Priority AI matching for your skills\n- Upload CV + send cover letters\n\nUpgrade now: https://showbizy.ai/pricing\n\n— ShowBizy`,
+    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>In the last week, our AI matched you to <strong>${totalMatches} projects</strong> in ${city}.</p>
+<p>But as a free member, <strong>you can't apply to any of them.</strong></p>
+<p>Projects you're missing:</p>
+<ul style="padding-left:20px;">${projectListHtml}</ul>
+<p>Here's what Pro members get:</p>
+<ul>
+<li>Apply to all AI-generated projects</li>
+<li>Apply to real industry jobs (BBC, Netflix, etc.)</li>
+<li>Priority AI matching for your skills</li>
+<li>Upload CV + send cover letters</li>
+</ul>
+<p style="margin-top:16px;padding:14px;background:#f8f8f8;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;font-size:16px;">Upgrade to Pro — £9/mo</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+  })
+}
+
+// Day 14: "Projects closing soon — last chance"
+export async function sendDripDay14(
+  user: { name: string; email: string; city?: string },
+  totalMatches: number,
+  closingProjects: DripProject[]
+): Promise<void> {
+  const city = user.city || 'your area'
+
+  const projectListHtml = closingProjects.slice(0, 3).map(p =>
+    `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
+    <span style="color:#cc0000;">⏳ Closing soon</span></li>`
+  ).join('')
+
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `${totalMatches} projects closing soon in ${city} — don't miss out`,
+    headers: { 'X-Priority': '1', 'Importance': 'High' },
+    text: `Hey ${user.name},\n\nYou've been on ShowBizy for 2 weeks now, and our AI has matched you to ${totalMatches} projects in ${city}.\n\nSeveral are closing soon — once they're full, they're gone.\n\nPro members are already applying. Don't let the right opportunity pass.\n\nUpgrade now: https://showbizy.ai/pricing\n\n— ShowBizy`,
+    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>You've been on ShowBizy for 2 weeks now, and our AI has matched you to <strong>${totalMatches} projects</strong> in ${city}.</p>
+<p><strong>Several are closing soon</strong> — once they're full, they're gone:</p>
+<ul style="padding-left:20px;">${projectListHtml}</ul>
+<p>Pro members are already applying. Don't let the right opportunity pass.</p>
+<p style="margin-top:16px;padding:14px;background:#f8f8f8;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;font-size:16px;">Upgrade to Pro — £9/mo</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+  })
+}
+
+// Match-triggered: "You just matched a project but can't apply"
+export async function sendMatchConversionEmail(
+  user: { name: string; email: string },
+  project: DripProject
+): Promise<void> {
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `You matched "${project.title}" — upgrade to apply`,
+    headers: { 'X-Priority': '1', 'Importance': 'High' },
+    text: `Hey ${user.name},\n\nGreat news — our AI just matched you to a new project:\n\n${project.title}\nStream: ${project.stream}\nLocation: ${project.location}\n\nThis project needs someone with your exact skills. But you need Pro to apply.\n\nUpgrade now: https://showbizy.ai/pricing\n\n— ShowBizy`,
+    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>Great news — our AI just matched you to a new project:</p>
+<div style="padding:16px;background:#f8f8f8;border-radius:8px;border-left:4px solid #7c3aed;margin:16px 0;">
+<strong>${project.title}</strong><br>
+${project.stream} — ${project.location}
+</div>
+<p>This project needs someone with <strong>your exact skills</strong>. But you need Pro to apply.</p>
+<p style="margin-top:16px;padding:14px;background:#7c3aed;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#fff;font-weight:bold;font-size:16px;text-decoration:none;">Upgrade to Pro — £9/mo</a></p>
+<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+</div>`,
+  })
+}
