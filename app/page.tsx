@@ -1077,7 +1077,7 @@ export default function Home() {
             <Link href="/support" className="text-white/40 hover:text-white transition">Support</Link>
             <Link href="/privacy" className="text-white/40 hover:text-white transition">Privacy</Link>
             <Link href="/terms" className="text-white/40 hover:text-white transition">Terms</Link>
-            <Link href="mailto:hello@bilabs.ai" className="text-white/40 hover:text-white transition">Contact</Link>
+            <Link href="mailto:admin@showbizy.ai" className="text-white/40 hover:text-white transition">Contact</Link>
           </div>
         </div>
       </footer>

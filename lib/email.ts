@@ -6,13 +6,13 @@ export const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: (process.env.ZOHO_EMAIL || 'hello@bilabs.ai').trim(),
+    user: (process.env.ZOHO_EMAIL || 'admin@showbizy.ai').trim(),
     pass: (process.env.ZOHO_APP_PASSWORD || '').trim(),
   },
 })
 
 const BASE_URL = 'https://showbizy.ai'
-const FROM = '"ShowBizy" <hello@bilabs.ai>'
+const FROM = '"ShowBizy" <admin@showbizy.ai>'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface EmailUser {
@@ -78,7 +78,7 @@ function wrapEmail(title: string, body: string): string {
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
       <tr><td style="border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;text-align:center;">
         <p style="color:#4b5563;font-size:12px;margin:0 0 4px;">ShowBizy — Where creative projects are born.</p>
-        <p style="color:#4b5563;font-size:12px;margin:0;">A <a href="https://bilabs.ai" style="color:#6b7280;text-decoration:none;">bilabs.ai</a> product</p>
+        <p style="color:#4b5563;font-size:12px;margin:0;"><a href="https://showbizy.ai" style="color:#6b7280;text-decoration:none;">showbizy.ai</a></p>
       </td></tr>
     </table>
   </td></tr>

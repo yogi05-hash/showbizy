@@ -121,7 +121,7 @@ export async function POST(req: Request) {
           const { transporter } = await import('@/lib/email')
           for (const match of matchedUsers.slice(0, 5)) {
             await transporter.sendMail({
-              from: '"ShowBizy" <hello@bilabs.ai>',
+              from: '"ShowBizy" <admin@showbizy.ai>',
               to: match.email,
               subject: `🎬 New project match: ${title}`,
               html: `

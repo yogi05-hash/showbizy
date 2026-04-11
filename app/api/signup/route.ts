@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     // Notify admin of new signup
     try {
       await transporter.sendMail({
-        from: '"ShowBizy Admin" <hello@bilabs.ai>',
+        from: '"ShowBizy Admin" <admin@showbizy.ai>',
         to: 'yogibot05@gmail.com',
         replyTo: email,
         subject: `🎬 New ShowBizy signup: ${name} (${city || 'Unknown'})`,
