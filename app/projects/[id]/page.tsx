@@ -634,16 +634,32 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {/* Upgrade Modal */}
+      {/* Upgrade Modal — goes directly to Stripe */}
       {showUpgradeModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowUpgradeModal(false)}>
           <div className="bg-[#0a0a1a] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center" onClick={e => e.stopPropagation()}>
             <span className="text-5xl mb-4 block">⚡</span>
             <h2 className="text-2xl font-bold mb-2">Upgrade to Pro</h2>
             <p className="text-white/50 mb-6">Join projects, apply to roles, view team profiles, and message creators directly.</p>
-            <Link href="/pricing" className="inline-block w-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-xl font-bold hover:opacity-90 transition mb-3">
-              See Pro Plans →
-            </Link>
+            <button
+              onClick={async () => {
+                try {
+                  const stored = localStorage.getItem('showbizy_user')
+                  if (!stored) { window.location.href = '/signin'; return }
+                  const u = JSON.parse(stored)
+                  const res = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: u.email, userId: u.id, plan: 'pro' }),
+                  })
+                  const data = await res.json()
+                  if (data.url) window.location.href = data.url
+                } catch { window.location.href = '/upgrade' }
+              }}
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black px-6 py-3.5 rounded-xl font-bold hover:opacity-90 transition mb-3"
+            >
+              Upgrade to Pro →
+            </button>
             <button onClick={() => setShowUpgradeModal(false)} className="text-white/40 text-sm hover:text-white transition">
               Maybe later
             </button>

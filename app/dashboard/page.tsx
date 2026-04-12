@@ -346,9 +346,19 @@ function DashboardPage() {
           <div className="space-y-6">
             {/* Upgrade to Pro — FOMO banner with real match count */}
             {!user.is_pro && (
-              <Link
-                href="/pricing"
-                className="block bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 hover:border-purple-500/50 transition group"
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/checkout', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: user.email, userId: user.id, plan: 'pro' }),
+                    })
+                    const data = await res.json()
+                    if (data.url) window.location.href = data.url
+                  } catch { window.location.href = '/upgrade' }
+                }}
+                className="block w-full text-left bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 hover:border-purple-500/50 transition group"
               >
                 {matchCount > 0 ? (
                   <>
@@ -371,10 +381,10 @@ function DashboardPage() {
                     </p>
                   </>
                 )}
-                <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg text-sm font-semibold group-hover:opacity-90 transition">
+                <span className="inline-block bg-gradient-to-r from-amber-500 to-orange-500 text-black px-4 py-2 rounded-lg text-sm font-semibold group-hover:opacity-90 transition">
                   Upgrade to Pro — {proPrice}/month →
                 </span>
-              </Link>
+              </button>
             )}
 
             {/* Profile Card */}

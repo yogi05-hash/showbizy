@@ -564,9 +564,22 @@ export default function JobsPage() {
                     </Link>
                   </>
                 ) : (
-                  <Link href="/pricing" className="w-full bg-gradient-to-r from-amber-400 to-orange-500 py-3 rounded-xl font-bold text-black text-sm hover:opacity-90 transition text-center block">
-                    View Pro Plans →
-                  </Link>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/checkout', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: user.email, userId: user.id, plan: 'pro' }),
+                        })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                      } catch { window.location.href = '/upgrade' }
+                    }}
+                    className="w-full bg-gradient-to-r from-amber-400 to-orange-500 py-3 rounded-xl font-bold text-black text-sm hover:opacity-90 transition text-center block"
+                  >
+                    Upgrade to Pro →
+                  </button>
                 )}
                 <button onClick={() => setShowUpgradePrompt(false)} className="text-white/30 text-xs hover:text-white/50 transition mt-1">
                   Maybe later
