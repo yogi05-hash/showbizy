@@ -69,28 +69,26 @@ export async function sendWelcomeEmail(user: EmailUser): Promise<void> {
 
   const text = `Hey ${user.name},
 
-Welcome to ShowBizy! Your profile is live.
+Welcome to ShowBizy! Your profile is live and our AI is scanning ${user.city || 'your area'} for projects.
 
-Here's what we have:
-- Name: ${user.name}
+Here's your profile:
 - Location: ${user.city || 'Not set'}
 - Streams: ${streamsList}
 - Skills: ${skillsList}
 
-What happens next:
-1. Our AI scans your area for creative projects that match your skills
-2. You'll get matched to projects within 48 hours
-3. Join a project, meet your team, start creating
+Our AI will match you to projects within 48 hours. In the meantime, you can browse what's live: ${BASE_URL}/projects
 
-Go to your dashboard: ${BASE_URL}/dashboard${FOOTER_TEXT}`
+Quick question — what kind of projects are you most interested in? Just reply to this email and I'll make sure our AI prioritises the right matches for you.
+
+${BASE_URL}/dashboard${FOOTER_TEXT}`
 
   const html = plainHtml(`
 <p>Hey ${user.name},</p>
-<p>Welcome to ShowBizy! Your profile is live.</p>
-<p><strong>Here's what we have:</strong></p>
-<p>Name: ${user.name}<br>Location: ${user.city || 'Not set'}<br>Streams: ${streamsList}<br>Skills: ${skillsList}${user.portfolio ? `<br>Portfolio: <a href="${user.portfolio}">${user.portfolio}</a>` : ''}</p>
-<p><strong>What happens next:</strong></p>
-<ol><li>Our AI scans your area for creative projects that match your skills</li><li>You'll get matched to projects within 48 hours</li><li>Join a project, meet your team, start creating</li></ol>
+<p>Welcome to ShowBizy! Your profile is live and our AI is scanning <strong>${user.city || 'your area'}</strong> for projects.</p>
+<p>Here's your profile:</p>
+<p>Location: ${user.city || 'Not set'}<br>Streams: ${streamsList}<br>Skills: ${skillsList}${user.portfolio ? `<br>Portfolio: <a href="${user.portfolio}">${user.portfolio}</a>` : ''}</p>
+<p>Our AI will match you to projects within 48 hours. In the meantime, you can <a href="${BASE_URL}/projects">browse what's live</a>.</p>
+<p><strong>Quick question</strong> — what kind of projects are you most interested in? Just reply to this email and I'll make sure our AI prioritises the right matches for you.</p>
 <p><a href="${BASE_URL}/dashboard">Go to your dashboard</a></p>`)
 
   await transporter.sendMail({ from: FROM, to: user.email, subject: `Welcome to ShowBizy, ${user.name}`, text, html })
