@@ -274,25 +274,10 @@ function DashboardPage() {
                 </div>
               ) : (
                 <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                  <p className="text-white/40 mb-3">No matches yet. Let's generate some projects for your area!</p>
-                  <button 
-                    onClick={async () => {
-                      try {
-                        setMatchesLoading(true)
-                        await fetch('/api/cron/generate-projects', { method: 'POST' })
-                        // Wait a moment then refresh matches
-                        setTimeout(() => {
-                          window.location.reload()
-                        }, 2000)
-                      } catch {
-                        alert('Failed to generate projects. Please try again.')
-                        setMatchesLoading(false)
-                      }
-                    }}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition text-sm font-medium"
-                  >
-                    Generate New Projects
-                  </button>
+                  <p className="text-white/40 mb-3">Our AI is scanning your area for projects that match your skills. New projects are generated daily.</p>
+                  <Link href="/projects" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition">
+                    Browse all projects →
+                  </Link>
                 </div>
               )}
             </section>

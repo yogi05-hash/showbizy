@@ -133,13 +133,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
 
       setJoined(true)
-      
+      setActiveTab('team')
+
       // Refresh project data
       const projectResponse = await fetch(`/api/projects/${id}`)
       if (projectResponse.ok) {
         const data = await projectResponse.json()
         setProject(data.project)
       }
+
+      // Send join confirmation email (non-blocking)
+      try {
+        await fetch('/api/emails/team-joined', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teamMembers: filledRoles.filter(r => r.member).map(r => ({
+              name: r.member?.name || '',
+              email: '',
+            })),
+            newMember: {
+              name: user.name,
+              email: user.email,
+              skills: user.skills || [],
+            },
+            project: {
+              id: project.id,
+              title: project.title,
+              stream: project.stream,
+              location: project.location,
+            },
+          }),
+        })
+      } catch {}
     } catch (err) {
       console.error('Failed to join project:', err)
       alert('Failed to join project')
@@ -263,6 +289,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </button>
         </div>
 
+        {/* Joined success banner */}
+        {joined && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <span className="text-3xl">🎉</span>
+              <div>
+                <h3 className="font-bold text-lg text-green-400 mb-1">You&apos;re in!</h3>
+                <p className="text-white/60 text-sm mb-3">You&apos;ve joined <strong className="text-white">{project.title}</strong>. Here&apos;s what happens next:</p>
+                <ul className="space-y-1.5 text-sm text-white/50">
+                  <li>1. Check the <button onClick={() => setActiveTab('team')} className="text-purple-400 hover:text-purple-300">Team tab</button> to see who else is on the project</li>
+                  <li>2. Use the <button onClick={() => setActiveTab('chat')} className="text-purple-400 hover:text-purple-300">Chat tab</button> to introduce yourself and coordinate</li>
+                  <li>3. You&apos;ll get email updates when new members join or milestones change</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Milestones */}
         {project.milestones && project.milestones.length > 0 && (
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 mb-8">
@@ -338,64 +382,64 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {/* Team Tab */}
             {activeTab === 'team' && (
               <div className="space-y-6">
-                {!isPaid ? (
-                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
-                    <span className="text-4xl mb-4 block">🔒</span>
-                    <h3 className="text-xl font-bold mb-2">Pro Feature</h3>
-                    <p className="text-white/50 mb-4">Upgrade to Pro to view team member profiles and apply to roles.</p>
-                    <Link href="/pricing" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition">
-                      Upgrade to Pro →
-                    </Link>
-                  </div>
-                ) : (
-                  <>
-                    {/* Filled roles */}
-                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
-                      <h3 className="font-bold mb-4 flex items-center gap-2">
-                        Team Members
-                        <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">{filledRoles.length} joined</span>
-                      </h3>
-                      <div className="space-y-3">
-                        {filledRoles.map((role, i) => (
-                          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03]">
-                            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-lg">
-                              {role.member?.avatar}
-                            </span>
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">{role.member?.name}</p>
-                              <p className="text-xs text-purple-400">{role.role}</p>
-                            </div>
-                            <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Confirmed</span>
+                {/* Filled roles — visible to ALL users */}
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    Team Members
+                    <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">{filledRoles.length} joined</span>
+                  </h3>
+                  {filledRoles.length > 0 ? (
+                    <div className="space-y-3">
+                      {filledRoles.map((role, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03]">
+                          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-lg">
+                            {role.member?.avatar || role.member?.name?.charAt(0)?.toUpperCase() || '?'}
+                          </span>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{role.member?.name || 'Team member'}</p>
+                            <p className="text-xs text-purple-400">{role.role}</p>
                           </div>
-                        ))}
-                      </div>
+                          <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">Confirmed</span>
+                        </div>
+                      ))}
                     </div>
+                  ) : (
+                    <p className="text-white/30 text-sm">No one has joined yet. Be the first!</p>
+                  )}
+                </div>
 
-                    {/* Open roles */}
-                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
-                      <h3 className="font-bold mb-4 flex items-center gap-2">
-                        Roles Needed
-                        <span className="text-xs bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full">{openRoles.length} open</span>
-                      </h3>
-                      <div className="space-y-3">
-                        {openRoles.map((role, i) => (
-                          <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-dashed border-white/10">
-                            <div className="flex items-center gap-3">
-                              <span className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-lg text-white/30">?</span>
-                              <div>
-                                <p className="font-medium text-sm">{role.role}</p>
-                                <p className="text-xs text-white/40">Open position</p>
-                              </div>
-                            </div>
-                            <button className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1.5 rounded-full border border-purple-500/20 hover:bg-purple-600/30 transition">
-                              Apply →
-                            </button>
+                {/* Open roles — visible to all, apply locked for free */}
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    Roles Needed
+                    <span className="text-xs bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full">{openRoles.length} open</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {openRoles.map((role, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-dashed border-white/10">
+                        <div className="flex items-center gap-3">
+                          <span className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-lg text-white/30">?</span>
+                          <div>
+                            <p className="font-medium text-sm">{role.role}</p>
+                            <p className="text-xs text-white/40">{role.description || 'Open position'}</p>
                           </div>
-                        ))}
+                        </div>
+                        {isPaid ? (
+                          <button
+                            onClick={() => handleJoin()}
+                            className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1.5 rounded-full border border-purple-500/20 hover:bg-purple-600/30 transition"
+                          >
+                            Apply →
+                          </button>
+                        ) : (
+                          <Link href="/upgrade" className="text-xs bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-full border border-amber-500/20 hover:bg-amber-500/20 transition">
+                            Pro to apply
+                          </Link>
+                        )}
                       </div>
-                    </div>
-                  </>
-                )}
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -403,9 +447,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {activeTab === 'chat' && !isPaid ? (
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
                 <span className="text-4xl mb-4 block">💬</span>
-                <h3 className="text-xl font-bold mb-2">Pro Feature</h3>
-                <p className="text-white/50 mb-4">Upgrade to Pro to message team members directly.</p>
-                <Link href="/pricing" className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition">
+                <h3 className="text-xl font-bold mb-2">Team Chat</h3>
+                <p className="text-white/50 mb-4">Upgrade to Pro to join the project and message team members.</p>
+                <Link href="/upgrade" className="inline-block bg-gradient-to-r from-amber-500 to-orange-500 text-black px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition">
                   Upgrade to Pro →
                 </Link>
               </div>
