@@ -212,11 +212,91 @@ export async function POST(
       console.error('Team notification email error:', teamEmailErr)
     }
 
+    // Auto-invite matching users for remaining open roles (fire-and-forget)
+    autoInviteForOpenRoles(projectId, projectTitle, projectData?.stream, projectData?.location, user_id).catch(err =>
+      console.error('Auto-invite error:', err)
+    )
+
     return NextResponse.json({ success: true, role: roleName, message: `You joined as ${roleName}` })
 
   } catch (error) {
     console.error('Project POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Auto-invite matching users for remaining open roles
+async function autoInviteForOpenRoles(projectId: string, projectTitle: string, stream?: string, location?: string, excludeUserId?: string) {
+  // Get remaining open roles
+  const { data: openRoles } = await supabaseAdmin
+    .from('showbizy_project_roles')
+    .select('role, skills_required, description')
+    .eq('project_id', projectId)
+    .eq('filled', false)
+
+  if (!openRoles?.length) return // All roles filled
+
+  // Find Pro users in same city/stream
+  const cityClean = (location || '').split(',')[0].trim()
+  let query = supabaseAdmin
+    .from('showbizy_users')
+    .select('id, name, email, skills, streams, city, is_pro')
+    .eq('is_pro', true)
+    .limit(30)
+
+  if (cityClean) {
+    query = query.ilike('city', `%${cityClean}%`)
+  }
+
+  const { data: candidates } = await query
+
+  if (!candidates?.length) return
+
+  // For each open role, find best matching candidates
+  const invited = new Set<string>()
+
+  for (const role of openRoles) {
+    const roleWords = role.role.toLowerCase().split(/[\s,/&-]+/).filter((w: string) => w.length > 2)
+
+    // Score each candidate
+    const scored = candidates
+      .filter(c => c.id !== excludeUserId && !invited.has(c.email))
+      .map(c => {
+        let score = 0
+        const userSkills: string[] = c.skills || []
+        for (const skill of userSkills) {
+          const s = skill.toLowerCase()
+          if (roleWords.some((rw: string) => s.includes(rw) || rw.includes(s))) score += 2
+        }
+        if (c.streams?.includes(stream || '')) score += 1
+        return { ...c, score }
+      })
+      .filter(c => c.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3) // Top 3 per role
+
+    for (const candidate of scored) {
+      invited.add(candidate.email)
+      try {
+        await transporter.sendMail({
+          from: '"ShowBizy AI" <admin@showbizy.ai>',
+          to: candidate.email,
+          subject: `${projectTitle} needs a ${role.role} — you're a match`,
+          text: `Hey ${candidate.name},\n\nA project you'd be perfect for needs a ${role.role}:\n\n${projectTitle}\nLocation: ${location || 'Various'}\n\nYour skills match this role. Join the team before the spot fills.\n\nView project: https://showbizy.ai/projects/${projectId}\n\n— ShowBizy`,
+          html: `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;max-width:560px;">
+<p>Hey ${candidate.name},</p>
+<p>A project you'd be perfect for needs a <strong>${role.role}</strong>:</p>
+<p style="padding:12px;background:#f8f8f8;border-radius:8px;border-left:3px solid #7c3aed;"><strong>${projectTitle}</strong><br>${location || 'Various'}</p>
+<p>Your skills match this role. Join the team before the spot fills.</p>
+<p><a href="https://showbizy.ai/projects/${projectId}">View project and join</a></p>
+<p style="color:#999;font-size:12px;margin-top:24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#999;">showbizy.ai</a></p>
+</div>`,
+        })
+      } catch (err) {
+        console.error(`Auto-invite email error for ${candidate.email}:`, err)
+      }
+      await new Promise(r => setTimeout(r, 500))
+    }
   }
 }
 

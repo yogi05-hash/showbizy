@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { use, useState, useEffect } from 'react'
-import { MOCK_MESSAGES } from '@/lib/data'
 import ProjectChat from '@/app/components/ProjectChat'
 
 interface Project {
@@ -461,7 +460,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             ) : activeTab === 'chat' && (
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl h-[600px] overflow-hidden">
                 <ProjectChat
-                  messages={MOCK_MESSAGES}
+                  projectId={project.id}
                   projectTitle={project.title}
                   brief={project.description}
                 />
