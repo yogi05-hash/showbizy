@@ -50,7 +50,7 @@ function DashboardPage() {
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
   const [matchCount, setMatchCount] = useState(0)
   const [matchedProjects, setMatchedProjects] = useState<any[]>([])
-  const [activeProjects, setActiveProjects] = useState<any[]>([])
+  const [activeProjects, setActiveProjects] = useState<{ id: string; title: string; stream: string; role: string; location: string; status: string }[]>([])
   const [matchesLoading, setMatchesLoading] = useState(false)
   const loc = detectLocation()
   const proPrice = formatPrice(PRICING[loc.currency.code].pro, loc.currency.code)
@@ -126,6 +126,18 @@ function DashboardPage() {
     }
 
     fetchMatches()
+
+    // Fetch projects user has joined
+    const fetchActiveProjects = async () => {
+      try {
+        const res = await fetch(`/api/user/projects?user_id=${user.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setActiveProjects(data.projects || [])
+        }
+      } catch {}
+    }
+    fetchActiveProjects()
   }, [user])
 
   if (loading || !user) {
@@ -285,10 +297,29 @@ function DashboardPage() {
             {/* Active Projects */}
             <section>
               <h2 className="text-xl font-bold mb-4">Active Projects</h2>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                <p className="text-white/40">No active projects yet.</p>
-                <p className="text-white/30 text-sm mt-2">Join a project to see your progress here!</p>
-              </div>
+              {activeProjects.length > 0 ? (
+                <div className="space-y-3">
+                  {activeProjects.map(proj => (
+                    <Link key={proj.id} href={`/projects/${proj.id}`} className="block bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-purple-500/20 transition">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-bold text-sm">{proj.title}</h3>
+                        <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">{proj.status}</span>
+                      </div>
+                      <p className="text-white/40 text-xs mb-2">{proj.stream} — {proj.location}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">{proj.role}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                  <p className="text-white/40">No active projects yet.</p>
+                  <p className="text-white/30 text-sm mt-2">
+                    <Link href="/projects" className="text-purple-400 hover:text-purple-300">Browse projects</Link> and join one to get started!
+                  </p>
+                </div>
+              )}
             </section>
 
             {/* Job Applications */}
