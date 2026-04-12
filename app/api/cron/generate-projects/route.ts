@@ -466,12 +466,12 @@ ${genuineMatches.length > 1 ? `<p style="color:#666;">Plus ${genuineMatches.leng
               ? `${broadMatch.length} project${broadMatch.length > 1 ? 's' : ''} in your area need${broadMatch.length === 1 ? 's' : ''} someone like you`
               : `New creative projects just dropped`,
             headers: { 'X-Priority': '1', 'Importance': 'High' },
-            text: `Hey ${user.name},\n\n${matchText}:\n\n${projectsToShow.map(p => `- ${p.title} (${p.stream}, ${p.location})`).join('\n')}\n\nUpgrade to Pro to see your match score and apply: https://showbizy.ai/pricing\n\n— ShowBizy`,
+            text: `Hey ${user.name},\n\n${matchText}:\n\n${projectsToShow.map(p => `- ${p.title} (${p.stream}, ${p.location})`).join('\n')}\n\nUpgrade to Pro to see your match score and apply: https://showbizy.ai/upgrade\n\n— ShowBizy`,
             html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
 <p>Hey ${user.name},</p>
 <p>${matchText}:</p>
 <ul style="padding-left:20px;">${projectsToShow.map(p => `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}</li>`).join('')}</ul>
-<p style="margin-top:16px;padding:14px;background:#7c3aed;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#fff;font-weight:bold;font-size:16px;text-decoration:none;">Upgrade to Pro — see your match score & apply</a></p>
+<p style="margin-top:16px;padding:14px;background:#7c3aed;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/upgrade" style="color:#fff;font-weight:bold;font-size:16px;text-decoration:none;">Upgrade to Pro — see your match score & apply</a></p>
 <p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
 </div>`,
           })

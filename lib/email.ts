@@ -276,7 +276,7 @@ export async function sendCronWeeklyDigest(
 ): Promise<void> {
   const projectsList = projects.map(p => `- ${p.title} (${p.stream}, ${p.location})\n  ${BASE_URL}/projects/${p.id}`).join('\n')
   const jobsList = jobs.map(j => `- ${j.title} at ${j.company} — ${j.salary}\n  ${BASE_URL}/jobs/${j.id}`).join('\n')
-  const proCta = user.is_pro ? '' : `\n\nUpgrade to Pro to apply: ${BASE_URL}/pricing`
+  const proCta = user.is_pro ? '' : `\n\nUpgrade to Pro to apply: ${BASE_URL}/upgrade`
 
   const text = `Hey ${user.name},
 
@@ -289,7 +289,7 @@ Browse all: ${BASE_URL}/projects${FOOTER_TEXT}`
 
   const projectsHtml = projects.map(p => `<li><a href="${BASE_URL}/projects/${p.id}"><strong>${p.title}</strong></a> — ${p.stream}, ${p.location}</li>`).join('')
   const jobsHtml = jobs.map(j => `<li><a href="${BASE_URL}/jobs/${j.id}"><strong>${j.title}</strong> at ${j.company}</a> — ${j.salary}</li>`).join('')
-  const proCtaHtml = user.is_pro ? '' : `<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;">Upgrade to Pro to apply to all projects and jobs. <a href="${BASE_URL}/pricing">View plans</a></p>`
+  const proCtaHtml = user.is_pro ? '' : `<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;">Upgrade to Pro to apply to all projects and jobs. <a href="${BASE_URL}/upgrade">View plans</a></p>`
 
   const html = plainHtml(`
 <p>Hey ${user.name},</p>
@@ -404,13 +404,13 @@ Our AI found ${count} project${count > 1 ? 's' : ''} in ${city} that match your 
 
 ${listText}
 
-Upgrade to Pro to apply: ${BASE_URL}/pricing${FOOTER_TEXT}`
+Upgrade to Pro to apply: ${BASE_URL}/upgrade${FOOTER_TEXT}`
 
   const html = plainHtml(`
 <p>Hey ${user.name},</p>
 <p>Our AI found <strong>${count} project${count > 1 ? 's' : ''}</strong> in ${city} that match your skills:</p>
 <ul>${listHtml}</ul>
-<p>Upgrade to Pro to apply and get priority matching. <a href="${BASE_URL}/pricing">View plans</a></p>`)
+<p>Upgrade to Pro to apply and get priority matching. <a href="${BASE_URL}/upgrade">View plans</a></p>`)
 
   await transporter.sendMail({ from: FROM, to: user.email, subject: `${count} project${count > 1 ? 's' : ''} found for you in ${city}`, text, html })
 }
@@ -429,7 +429,7 @@ Pro members get:
 - Priority AI matching
 - Upload CV + send cover letters
 
-Upgrade now: ${BASE_URL}/pricing${FOOTER_TEXT}`
+Upgrade now: ${BASE_URL}/upgrade${FOOTER_TEXT}`
 
   const html = plainHtml(`
 <p>Hey ${user.name},</p>
@@ -437,7 +437,7 @@ Upgrade now: ${BASE_URL}/pricing${FOOTER_TEXT}`
 <ul>${listHtml}</ul>
 <p>Pro members get:</p>
 <ul><li>Apply to all AI-generated projects</li><li>Apply to real industry jobs</li><li>Priority AI matching</li><li>Upload CV + send cover letters</li></ul>
-<p><a href="${BASE_URL}/pricing">Upgrade to Pro</a></p>`)
+<p><a href="${BASE_URL}/upgrade">Upgrade to Pro</a></p>`)
 
   await transporter.sendMail({ from: FROM, to: user.email, subject: `${user.name}, you've been matched to ${totalMatches} projects`, text, html })
 }
@@ -452,7 +452,7 @@ You've been on ShowBizy for 2 weeks. Our AI has matched you to ${totalMatches} p
 
 Pro members are already applying. Don't let the right opportunity pass.
 
-Upgrade now: ${BASE_URL}/pricing${FOOTER_TEXT}`
+Upgrade now: ${BASE_URL}/upgrade${FOOTER_TEXT}`
 
   const html = plainHtml(`
 <p>Hey ${user.name},</p>
@@ -460,7 +460,7 @@ Upgrade now: ${BASE_URL}/pricing${FOOTER_TEXT}`
 <p><strong>Several are closing soon:</strong></p>
 <ul>${listHtml}</ul>
 <p>Pro members are already applying. Don't let the right opportunity pass.</p>
-<p><a href="${BASE_URL}/pricing">Upgrade to Pro</a></p>`)
+<p><a href="${BASE_URL}/upgrade">Upgrade to Pro</a></p>`)
 
   await transporter.sendMail({ from: FROM, to: user.email, subject: `${totalMatches} projects closing soon in ${city}`, text, html })
 }
@@ -476,13 +476,13 @@ Location: ${project.location}
 
 This project needs someone with your skills. Upgrade to Pro to apply.
 
-Upgrade: ${BASE_URL}/pricing${FOOTER_TEXT}`
+Upgrade: ${BASE_URL}/upgrade${FOOTER_TEXT}`
 
   const html = plainHtml(`
 <p>Hey ${user.name},</p>
 <p>Our AI just matched you to a new project:</p>
 <p style="padding:12px;background:#f8f8f8;border-radius:8px;border-left:3px solid #7c3aed;"><strong>${project.title}</strong><br>${project.stream} — ${project.location}</p>
-<p>This project needs someone with your skills. <a href="${BASE_URL}/pricing">Upgrade to Pro to apply</a></p>`)
+<p>This project needs someone with your skills. <a href="${BASE_URL}/upgrade">Upgrade to Pro to apply</a></p>`)
 
   await transporter.sendMail({ from: FROM, to: user.email, subject: `You matched "${project.title}" — upgrade to apply`, text, html })
 }
