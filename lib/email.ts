@@ -125,44 +125,58 @@ function stepItem(num: number, title: string, desc: string): string {
 </div>`
 }
 
-// ─── 1. Welcome Email ──────────────────────────────────────────────────────
+// ─── 1. Welcome Email (plain text style to avoid spam) ────────────────────
 export async function sendWelcomeEmail(user: EmailUser): Promise<void> {
   const streamsList = (user.streams || []).join(', ') || 'Not set'
   const skillsList = (user.skills || []).join(', ') || 'Not set'
 
-  const profileCard = card('Your Profile', `
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-      ${infoRow('Name', user.name)}
-      ${infoRow('Streams', streamsList)}
-      ${infoRow('Skills', skillsList)}
-      ${infoRow('Location', user.city || 'Not set')}
-      ${infoRow('Availability', user.availability || 'Not set')}
-      ${user.portfolio ? infoRow('Portfolio', `<a href="${user.portfolio}" style="color:#a855f7;">${user.portfolio}</a>`) : ''}
-    </table>
-  `)
+  const textBody = `Hey ${user.name},
 
-  const stepsCard = card('What happens next', `
-    ${stepItem(1, 'AI scans your area', 'We look at who\'s near you and what projects would be perfect')}
-    ${stepItem(2, 'Get matched to projects', 'First project matches arrive within 48 hours')}
-    ${stepItem(3, 'Create together', 'Join projects, meet your team, start creating')}
-  `)
+Welcome to ShowBizy! Your profile is live.
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Your ShowBizy profile is live! Our AI is already scanning your area for creative projects that match your skills.
-    </p>
-    ${profileCard}
-    ${stepsCard}
-    ${ctaButton('Go to Dashboard →', `${BASE_URL}/dashboard`)}
-  `
+Here's what we have:
+- Name: ${user.name}
+- Location: ${user.city || 'Not set'}
+- Streams: ${streamsList}
+- Skills: ${skillsList}
+
+What happens next:
+1. Our AI scans your area for creative projects that match your skills
+2. You'll get matched to projects within 48 hours
+3. Join a project, meet your team, start creating
+
+Go to your dashboard: https://showbizy.ai/dashboard
+
+— The ShowBizy Team`
+
+  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+<p>Hey ${user.name},</p>
+<p>Welcome to ShowBizy! Your profile is live.</p>
+<p><strong>Here's what we have:</strong></p>
+<p>
+Name: ${user.name}<br>
+Location: ${user.city || 'Not set'}<br>
+Streams: ${streamsList}<br>
+Skills: ${skillsList}${user.portfolio ? `<br>Portfolio: <a href="${user.portfolio}">${user.portfolio}</a>` : ''}
+</p>
+<p><strong>What happens next:</strong></p>
+<ol>
+<li>Our AI scans your area for creative projects that match your skills</li>
+<li>You'll get matched to projects within 48 hours</li>
+<li>Join a project, meet your team, start creating</li>
+</ol>
+<p><a href="https://showbizy.ai/dashboard">Go to your dashboard</a></p>
+<p style="color: #666; font-size: 12px; margin-top: 24px;">— The ShowBizy Team<br><a href="https://showbizy.ai" style="color: #666;">showbizy.ai</a></p>
+</div>`
 
   try {
     await transporter.sendMail({
       from: FROM,
       to: user.email,
-      subject: `🎬 Welcome to ShowBizy, ${user.name}!`,
-      html: wrapEmail(`Welcome to ShowBizy!`, body),
+      subject: `Welcome to ShowBizy, ${user.name}`,
+      headers: { 'X-Priority': '3', 'Importance': 'Normal' },
+      text: textBody,
+      html: htmlBody,
     })
     console.log(`[email] Welcome email sent to ${user.email}`)
   } catch (err) {
