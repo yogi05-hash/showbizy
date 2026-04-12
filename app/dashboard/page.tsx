@@ -381,7 +381,7 @@ function DashboardPage() {
                     )}
                   </div>
                   <p className="text-white/40 text-sm">{user.city || 'Location not set'}</p>
-                  <Link href="/dashboard" className="text-xs text-purple-400 hover:text-purple-300 transition">
+                  <Link href="/profile" className="text-xs text-purple-400 hover:text-purple-300 transition">
                     Edit profile →
                   </Link>
                 </div>
