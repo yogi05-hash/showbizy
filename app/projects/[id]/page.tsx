@@ -44,6 +44,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [joining, setJoining] = useState(false)
   const [isPro, setIsPro] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [assignedRole, setAssignedRole] = useState('')
   const [userSkills, setUserSkills] = useState<string[]>([])
   const [userStreams, setUserStreams] = useState<string[]>([])
   const [userCity, setUserCity] = useState('')
@@ -89,50 +90,62 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const isPaid = isPro
 
+  // Find best-fit role based on user skills
+  const findBestRole = () => {
+    if (!project) return null
+    const openRoles = project.roles.filter(r => !r.filled && r.id)
+    if (openRoles.length === 0) return null
+    if (userSkills.length === 0) return openRoles[0] // No skills = first open role
+
+    let bestScore = -1
+    let bestRole = openRoles[0]
+    for (const role of openRoles) {
+      const roleWords = role.role.toLowerCase().split(/[\s,/&-]+/).filter(w => w.length > 2)
+      const descWords = (role.description || '').toLowerCase()
+      let score = 0
+      for (const skill of userSkills) {
+        const s = skill.toLowerCase()
+        if (roleWords.some(rw => s.includes(rw) || rw.includes(s))) score += 2
+        if (descWords.includes(s)) score += 1
+      }
+      if (score > bestScore) { bestScore = score; bestRole = role }
+    }
+    return bestRole
+  }
+
   const handleJoin = async () => {
     if (!isPaid) {
       setShowUpgradeModal(true)
       return
     }
-    if (joined || !project) {
-      setJoined(false)
-      return
-    }
-    
+    if (joined || !project) return
+
     setJoining(true)
-    
+
     try {
-      // Get user data from localStorage
       const stored = localStorage.getItem('showbizy_user')
-      if (!stored) {
-        alert('Please log in first')
-        return
-      }
-      
+      if (!stored) { alert('Please log in first'); return }
+
       const user = JSON.parse(stored)
-      const openRole = project.roles.find(r => !r.filled)
-      
-      if (!openRole?.id) {
-        alert('No open roles available')
-        return
-      }
+      const bestRole = findBestRole()
+
+      if (!bestRole?.id) { alert('No open roles available'); setJoining(false); return }
 
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          role_id: openRole.id
-        })
+        body: JSON.stringify({ user_id: user.id, role_id: bestRole.id })
       })
 
       if (!response.ok) {
         const error = await response.json()
         alert(error.error || 'Failed to join project')
+        setJoining(false)
         return
       }
 
       setJoined(true)
+      setAssignedRole(bestRole.role)
       setActiveTab('team')
 
       // Refresh project data
@@ -142,30 +155,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         setProject(data.project)
       }
 
-      // Send join confirmation email (non-blocking)
-      try {
-        await fetch('/api/emails/team-joined', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            teamMembers: filledRoles.filter(r => r.member).map(r => ({
-              name: r.member?.name || '',
-              email: '',
-            })),
-            newMember: {
-              name: user.name,
-              email: user.email,
-              skills: user.skills || [],
-            },
-            project: {
-              id: project.id,
-              title: project.title,
-              stream: project.stream,
-              location: project.location,
-            },
-          }),
-        })
-      } catch {}
+      // Send emails server-side (non-blocking)
+      fetch('/api/emails/team-joined', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamMembers: project.roles.filter(r => r.filled && r.member).map(r => ({
+            name: r.member?.name || '', email: '',
+          })),
+          newMember: { name: user.name, email: user.email, skills: user.skills || [] },
+          project: { id: project.id, title: project.title, stream: project.stream, location: project.location },
+        }),
+      }).catch(() => {})
     } catch (err) {
       console.error('Failed to join project:', err)
       alert('Failed to join project')
@@ -295,8 +296,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex items-start gap-4">
               <span className="text-3xl">🎉</span>
               <div>
-                <h3 className="font-bold text-lg text-green-400 mb-1">You&apos;re in!</h3>
-                <p className="text-white/60 text-sm mb-3">You&apos;ve joined <strong className="text-white">{project.title}</strong>. Here&apos;s what happens next:</p>
+                <h3 className="font-bold text-lg text-green-400 mb-1">
+                  You joined as {assignedRole || 'Team Member'}!
+                </h3>
+                <p className="text-white/60 text-sm mb-3">
+                  You&apos;re now part of <strong className="text-white">{project.title}</strong>. A confirmation email is on its way.
+                </p>
                 <ul className="space-y-1.5 text-sm text-white/50">
                   <li>1. Check the <button onClick={() => setActiveTab('team')} className="text-purple-400 hover:text-purple-300">Team tab</button> to see who else is on the project</li>
                   <li>2. Use the <button onClick={() => setActiveTab('chat')} className="text-purple-400 hover:text-purple-300">Chat tab</button> to introduce yourself and coordinate</li>

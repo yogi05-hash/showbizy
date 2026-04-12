@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { transporter } from '@/lib/email'
 
 // GET: Fetch single project with all roles and team members
 export async function GET(
@@ -91,7 +92,7 @@ export async function POST(
     // Check if user is Pro
     const { data: user, error: userError } = await supabaseAdmin
       .from('showbizy_users')
-      .select('is_pro')
+      .select('id, name, email, is_pro, skills, streams')
       .eq('id', user_id)
       .single()
 
@@ -148,7 +149,70 @@ export async function POST(
       .update({ filled_roles: filledCount })
       .eq('id', projectId)
 
-    return NextResponse.json({ success: true, message: 'Successfully joined project' })
+    // Get project details for email
+    const { data: projectData } = await supabaseAdmin
+      .from('showbizy_projects')
+      .select('title, stream, location')
+      .eq('id', projectId)
+      .single()
+
+    const projectTitle = projectData?.title || 'the project'
+    const roleName = role.role || 'Team Member'
+
+    // Send confirmation email to the user who joined
+    try {
+      await transporter.sendMail({
+        from: '"ShowBizy AI" <admin@showbizy.ai>',
+        to: user.email,
+        subject: `You joined ${projectTitle} as ${roleName}`,
+        text: `Hey ${user.name},\n\nYou've joined "${projectTitle}" as ${roleName}.\n\nWhat's next:\n1. Check the Team tab to see who else is on the project\n2. Use the Chat to introduce yourself\n3. You'll get email updates when new members join\n\nView project: https://showbizy.ai/projects/${projectId}\n\n— ShowBizy`,
+        html: `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;max-width:560px;">
+<p>Hey ${user.name},</p>
+<p>You've joined <strong>"${projectTitle}"</strong> as <strong>${roleName}</strong>.</p>
+<p><strong>What's next:</strong></p>
+<ol><li>Check the Team tab to see who else is on the project</li><li>Use the Chat to introduce yourself</li><li>You'll get email updates when new members join</li></ol>
+<p><a href="https://showbizy.ai/projects/${projectId}">View project</a></p>
+<p style="color:#999;font-size:12px;margin-top:24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#999;">showbizy.ai</a></p>
+</div>`,
+      })
+    } catch (emailErr) {
+      console.error('Join confirmation email error:', emailErr)
+    }
+
+    // Notify existing team members
+    try {
+      const { data: teamRoles } = await supabaseAdmin
+        .from('showbizy_project_roles')
+        .select('filled_by, showbizy_users(name, email)')
+        .eq('project_id', projectId)
+        .eq('filled', true)
+        .neq('filled_by', user_id)
+
+      if (teamRoles?.length) {
+        for (const tr of teamRoles) {
+          const member = (tr as unknown as { showbizy_users: { name: string; email: string } }).showbizy_users
+          if (member?.email) {
+            await transporter.sendMail({
+              from: '"ShowBizy AI" <admin@showbizy.ai>',
+              to: member.email,
+              subject: `${user.name} joined ${projectTitle} as ${roleName}`,
+              text: `Hey ${member.name},\n\n${user.name} just joined "${projectTitle}" as ${roleName}.\n\nYour team is growing! Check in and say hello.\n\nView project: https://showbizy.ai/projects/${projectId}\n\n— ShowBizy`,
+              html: `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;max-width:560px;">
+<p>Hey ${member.name},</p>
+<p><strong>${user.name}</strong> just joined <strong>"${projectTitle}"</strong> as <strong>${roleName}</strong>.</p>
+<p>Your team is growing! Check in and say hello.</p>
+<p><a href="https://showbizy.ai/projects/${projectId}">View project</a></p>
+<p style="color:#999;font-size:12px;margin-top:24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#999;">showbizy.ai</a></p>
+</div>`,
+            })
+          }
+        }
+      }
+    } catch (teamEmailErr) {
+      console.error('Team notification email error:', teamEmailErr)
+    }
+
+    return NextResponse.json({ success: true, role: roleName, message: `You joined as ${roleName}` })
 
   } catch (error) {
     console.error('Project POST error:', error)
