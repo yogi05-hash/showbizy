@@ -110,11 +110,10 @@ export default function ProjectsPage() {
     <div className="min-h-screen bg-[#030712] text-white">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2">
           <img src="/logo.png" alt="ShowBizy" style={{ height: 48, width: 'auto' }} />
         </Link>
         <div className="flex items-center gap-6 text-sm">
-          <Link href="/" className="text-white/50 hover:text-white transition hidden md:block">Home</Link>
           <Link href="/projects" className="text-white font-medium">Projects</Link>
           <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
           {user ? (

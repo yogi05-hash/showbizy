@@ -327,9 +327,9 @@ export default function Home() {
       `}</style>
       {/* ─── NAV ─── */}
       <nav className="relative flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
-        <div className="flex items-center gap-2">
+        <Link href={isLoggedIn ? '/dashboard' : '/'} className="flex items-center gap-2">
           <Image src="/logo.png" alt="ShowBizy" width={200} height={56} style={{ height: 48, width: 'auto' }} unoptimized />
-        </div>
+        </Link>
         <div className="hidden md:flex items-center gap-6 text-sm">
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>

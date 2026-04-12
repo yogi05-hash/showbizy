@@ -166,14 +166,13 @@ export default function PricingPage() {
     <div className="min-h-screen bg-[#030712] text-white">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 bg-[#030712]/80">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2">
           <span className="text-2xl">🎬</span>
           <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             ShowBizy
           </span>
         </Link>
         <div className="flex items-center gap-6 text-sm">
-          <Link href="/" className="text-white/50 hover:text-white transition">Home</Link>
           <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <Link href="/pricing" className="text-white font-medium">Pricing</Link>
           {user ? (
