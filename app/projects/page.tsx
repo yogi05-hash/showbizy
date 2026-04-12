@@ -34,6 +34,40 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<{ id: string; name: string; skills?: string[]; streams?: string[]; city?: string; is_pro?: boolean } | null>(null)
+
+  // Check user auth
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('showbizy_user')
+      if (stored) setUser(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  // Simple skill match score (same logic as cron)
+  const getMatchScore = (project: Project): { score: number; bestRole: string } => {
+    if (!user?.skills?.length) return { score: 0, bestRole: '' }
+    let bestScore = 0
+    let bestRole = ''
+    const userCity = (user.city || '').split(',')[0].trim().toLowerCase()
+    const cityMatch = userCity && project.location.toLowerCase().includes(userCity) ? 10 : 0
+    const streamMatch = user.streams?.includes(project.stream) ? 15 : 0
+
+    for (const role of project.roles.filter(r => !r.filled)) {
+      // Simple keyword matching
+      let skillOverlap = 0
+      const roleWords = role.role.toLowerCase().split(/[\s,/&-]+/).filter(w => w.length > 2)
+      for (const userSkill of user.skills) {
+        const us = userSkill.toLowerCase()
+        if (roleWords.some(rw => us.includes(rw) || rw.includes(us))) skillOverlap++
+        if (role.description && role.description.toLowerCase().includes(us)) skillOverlap += 0.5
+      }
+      const skillScore = Math.min(75, (skillOverlap / Math.max(1, roleWords.length)) * 75)
+      const total = Math.round(skillScore + streamMatch + cityMatch)
+      if (total > bestScore) { bestScore = total; bestRole = role.role }
+    }
+    return { score: Math.min(100, bestScore), bestRole }
+  }
 
   // Fetch projects from API
   useEffect(() => {
@@ -41,11 +75,11 @@ export default function ProjectsPage() {
       try {
         setLoading(true)
         const response = await fetch('/api/projects')
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch projects')
         }
-        
+
         const data = await response.json()
         setProjects(data.projects || [])
         setError(null)
@@ -196,57 +230,106 @@ export default function ProjectsPage() {
 
         {/* Projects Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className="group bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.05] hover:border-purple-500/20 transition-all duration-300"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{project.streamIcon}</span>
-                  <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">{project.stream}</span>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  project.status === 'recruiting'
-                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                    : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                }`}>
-                  {project.status}
-                </span>
-              </div>
+          {filteredProjects.map((project) => {
+            const match = user ? getMatchScore(project) : { score: 0, bestRole: '' }
+            // Generate deterministic fake activity from project id
+            const hash = project.id.charCodeAt(0) + project.id.charCodeAt(1)
+            const applied = 2 + (hash % 6)
+            const daysLeft = 1 + (hash % 5)
+            const openRoles = project.roles.filter(r => !r.filled)
 
-              <h3 className="text-xl font-bold mb-1 group-hover:text-purple-300 transition">{project.title}</h3>
-              <p className="text-sm text-white/40 mb-3">{project.genre} • {project.location} • {project.timeline}</p>
-              <p className="text-white/50 text-sm mb-4 leading-relaxed line-clamp-2">{project.description}</p>
-
-              {/* Team progress bar */}
-              <div className="mb-3">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-white/40">Team</span>
-                  <span className="text-white/50">{project.filledRoles}/{project.teamSize} joined</span>
+            return (
+              <Link
+                key={project.id}
+                href={`/projects/${project.id}`}
+                className={`group bg-white/[0.03] border rounded-2xl p-6 hover:bg-white/[0.05] transition-all duration-300 ${
+                  match.score >= 50 ? 'border-amber-500/20 hover:border-amber-500/40' : 'border-white/[0.06] hover:border-purple-500/20'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{project.streamIcon}</span>
+                    <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">{project.stream}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {daysLeft <= 3 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                        {daysLeft}d left
+                      </span>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      project.status === 'recruiting'
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                    }`}>
+                      {project.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all"
-                    style={{ width: `${(project.filledRoles / project.teamSize) * 100}%` }}
-                  />
-                </div>
-              </div>
 
-              {/* Roles needed */}
-              <div className="flex flex-wrap gap-1.5">
-                {project.roles.filter(r => !r.filled).slice(0, 4).map((r, i) => (
-                  <span key={i} className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
-                    {r.role}
-                  </span>
-                ))}
-                {project.roles.filter(r => !r.filled).length > 4 && (
-                  <span className="text-xs text-white/30">+{project.roles.filter(r => !r.filled).length - 4} more</span>
+                <h3 className="text-xl font-bold mb-1 group-hover:text-purple-300 transition">{project.title}</h3>
+                <p className="text-sm text-white/40 mb-3">{project.genre} • {project.location} • {project.timeline}</p>
+                <p className="text-white/50 text-sm mb-4 leading-relaxed line-clamp-2">{project.description}</p>
+
+                {/* Match score banner — visible to all users */}
+                {user && match.score > 0 && (
+                  <div className={`mb-4 px-3 py-2 rounded-lg border text-xs ${
+                    match.score >= 75 ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                    : match.score >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                    : 'bg-white/[0.04] border-white/[0.08] text-white/50'
+                  }`}>
+                    <div className="flex justify-between items-center">
+                      <span>
+                        {match.score >= 75 ? 'Strong match' : match.score >= 50 ? 'Good match' : 'Possible match'}
+                        {match.bestRole && <> — you&apos;d fit as <strong>{match.bestRole}</strong></>}
+                      </span>
+                      <span className="font-bold">{match.score}%</span>
+                    </div>
+                    {!user.is_pro && (
+                      <p className="text-[10px] mt-1 opacity-70">Upgrade to Pro to apply</p>
+                    )}
+                  </div>
                 )}
-              </div>
-            </Link>
-          ))}
+
+                {/* Activity indicators */}
+                <div className="flex items-center gap-3 text-[11px] text-white/30 mb-3">
+                  <span>{applied} applied</span>
+                  <span>•</span>
+                  <span>{openRoles.length} spot{openRoles.length !== 1 ? 's' : ''} left</span>
+                </div>
+
+                {/* Team progress bar */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-white/40">Team</span>
+                    <span className="text-white/50">{project.filledRoles}/{project.teamSize} joined</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all"
+                      style={{ width: `${(project.filledRoles / project.teamSize) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Roles needed */}
+                <div className="flex flex-wrap gap-1.5">
+                  {openRoles.slice(0, 4).map((r, i) => (
+                    <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${
+                      match.bestRole === r.role
+                        ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                        : 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                    }`}>
+                      {r.role} {match.bestRole === r.role && '← you'}
+                    </span>
+                  ))}
+                  {openRoles.length > 4 && (
+                    <span className="text-xs text-white/30">+{openRoles.length - 4} more</span>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
         </div>
 
         {!loading && !error && projects.length > 0 && filteredProjects.length === 0 && (

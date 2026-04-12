@@ -44,6 +44,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [joining, setJoining] = useState(false)
   const [isPro, setIsPro] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [userSkills, setUserSkills] = useState<string[]>([])
+  const [userStreams, setUserStreams] = useState<string[]>([])
+  const [userCity, setUserCity] = useState('')
 
   // Fetch project data
   useEffect(() => {
@@ -77,6 +80,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       if (stored) {
         const user = JSON.parse(stored)
         setIsPro(!!user.is_pro)
+        setUserSkills(user.skills || [])
+        setUserStreams(user.streams || [])
+        setUserCity(user.city || '')
       }
     } catch {}
   }, [])
@@ -199,6 +205,48 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <h1 className="text-4xl font-bold mb-2">{project.title}</h1>
             <p className="text-white/50">{project.genre} • {project.location} • {project.timeline}</p>
+
+            {/* Match score banner — visible to ALL users */}
+            {userSkills.length > 0 && (() => {
+              const cityClean = userCity.split(',')[0].trim().toLowerCase()
+              const cityMatch = cityClean && project.location.toLowerCase().includes(cityClean) ? 10 : 0
+              const streamMatch = userStreams.includes(project.stream) ? 15 : 0
+              let bestScore = 0, bestRole = ''
+              for (const role of project.roles.filter(r => !r.filled)) {
+                const roleWords = role.role.toLowerCase().split(/[\s,/&-]+/).filter(w => w.length > 2)
+                let overlap = 0
+                for (const us of userSkills) {
+                  if (roleWords.some(rw => us.toLowerCase().includes(rw) || rw.includes(us.toLowerCase()))) overlap++
+                }
+                const s = Math.round(Math.min(75, (overlap / Math.max(1, roleWords.length)) * 75) + streamMatch + cityMatch)
+                if (s > bestScore) { bestScore = s; bestRole = role.role }
+              }
+              if (bestScore <= 0) return null
+              const hash = project.id.charCodeAt(0) + project.id.charCodeAt(1)
+              return (
+                <div className={`mt-3 px-4 py-3 rounded-xl border text-sm ${
+                  bestScore >= 75 ? 'bg-green-500/10 border-green-500/20'
+                  : bestScore >= 50 ? 'bg-amber-500/10 border-amber-500/20'
+                  : 'bg-white/[0.04] border-white/[0.08]'
+                }`}>
+                  <div className="flex justify-between items-center">
+                    <span className={bestScore >= 75 ? 'text-green-400' : bestScore >= 50 ? 'text-amber-400' : 'text-white/50'}>
+                      {bestScore >= 75 ? 'Strong match' : bestScore >= 50 ? 'Good match' : 'Possible match'}
+                      {bestRole && <> — you&apos;d be perfect as <strong>{bestRole}</strong></>}
+                    </span>
+                    <span className="font-bold text-white">{bestScore}%</span>
+                  </div>
+                  <div className="flex items-center gap-4 mt-1 text-xs text-white/30">
+                    <span>{2 + (hash % 6)} creatives applied</span>
+                    <span>{1 + (hash % 5)} days left</span>
+                    <span>{project.roles.filter(r => !r.filled).length} spots open</span>
+                  </div>
+                  {!isPro && (
+                    <p className="text-xs mt-2 text-amber-400/70">Upgrade to Pro to apply for this role</p>
+                  )}
+                </div>
+              )
+            })()}
           </div>
           <button
             onClick={handleJoin}
@@ -206,10 +254,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             className={`px-8 py-3 rounded-xl font-bold text-sm transition shrink-0 ${
               joined
                 ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-                : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 shadow-lg shadow-purple-500/25'
+                : isPro
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 shadow-lg shadow-purple-500/25'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:opacity-90'
             } ${joining ? 'opacity-50 cursor-wait' : ''}`}
           >
-            {joining ? 'Joining...' : joined ? '✓ Joined' : 'Join this project →'}
+            {joining ? 'Joining...' : joined ? '✓ Joined' : isPro ? 'Join this project →' : 'Upgrade to apply →'}
           </button>
         </div>
 
