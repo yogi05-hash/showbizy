@@ -151,14 +151,19 @@ export default function JobsPage() {
             <Link href="/projects" className="text-white/50 hover:text-white transition">Projects</Link>
             <Link href="/jobs" className="text-purple-400 font-medium">Jobs</Link>
             {user ? (
-              <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
+              <>
+                <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
+                <Link href="/dashboard" className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-xs font-bold overflow-hidden">
+                  {user.name?.charAt(0)?.toUpperCase() || '?'}
+                </Link>
+              </>
             ) : (
-              <Link href="/signin" className="text-white/50 hover:text-white transition">Sign In</Link>
-            )}
-            {!user && (
-              <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg font-semibold text-sm">
-                Get Started Free
-              </Link>
+              <>
+                <Link href="/signin" className="text-white/50 hover:text-white transition">Sign in</Link>
+                <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg font-semibold text-sm">
+                  Get started
+                </Link>
+              </>
             )}
           </div>
         </div>

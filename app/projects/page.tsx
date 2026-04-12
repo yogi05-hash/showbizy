@@ -114,10 +114,24 @@ export default function ProjectsPage() {
           <img src="/logo.png" alt="ShowBizy" style={{ height: 48, width: 'auto' }} />
         </Link>
         <div className="flex items-center gap-6 text-sm">
-          <Link href="/" className="text-white/50 hover:text-white transition">Home</Link>
-          <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
+          <Link href="/" className="text-white/50 hover:text-white transition hidden md:block">Home</Link>
           <Link href="/projects" className="text-white font-medium">Projects</Link>
           <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
+          {user ? (
+            <>
+              <Link href="/dashboard" className="text-white/50 hover:text-white transition">Dashboard</Link>
+              <Link href="/dashboard" className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-xs font-bold">
+                {user.name?.charAt(0)?.toUpperCase() || '?'}
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/signin" className="text-white/50 hover:text-white transition">Sign in</Link>
+              <Link href="/signup" className="bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-lg font-semibold text-sm">
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 

@@ -341,15 +341,15 @@ export default function Home() {
           {isLoggedIn ? (
             <>
               <Link href="/dashboard" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Dashboard</Link>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-xs font-bold text-black">
-                Y
-              </div>
+              <Link href="/dashboard" className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-xs font-bold text-black">
+                {(() => { try { const u = JSON.parse(localStorage.getItem('showbizy_user') || '{}'); return u.name?.charAt(0)?.toUpperCase() || '?' } catch { return '?' } })()}
+              </Link>
             </>
           ) : (
             <>
               <Link href="/signin" className="text-sm text-white/60 hover:text-white transition hidden sm:block">Sign in</Link>
               <Link href="/signup" className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2 rounded-lg font-semibold text-sm text-black hover:opacity-90 transition">
-                Get Started Free
+                Get started
               </Link>
             </>
           )}
