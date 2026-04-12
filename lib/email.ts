@@ -13,6 +13,13 @@ export const transporter = nodemailer.createTransport({
 
 const BASE_URL = 'https://showbizy.ai'
 const FROM = '"ShowBizy" <hello@bilabs.ai>'
+const FOOTER_TEXT = '\n— ShowBizy\nhttps://showbizy.ai'
+const FOOTER_HTML = '<p style="color:#999;font-size:12px;margin-top:24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#999;">showbizy.ai</a></p>'
+
+// All emails use this plain wrapper to avoid spam filters
+function plainHtml(body: string): string {
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;max-width:560px;">${body}${FOOTER_HTML}</div>`
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface EmailUser {
@@ -53,84 +60,14 @@ interface WeeklyStats {
 
 // ─── Message throttle tracking (in-memory) ─────────────────────────────────
 const messageThrottle: Record<string, number> = {}
-const THROTTLE_MS = 5 * 60 * 1000 // 5 minutes
+const THROTTLE_MS = 5 * 60 * 1000
 
-// ─── Base HTML wrapper ─────────────────────────────────────────────────────
-function wrapEmail(title: string, body: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title></head>
-<body style="margin:0;padding:0;background:#07060b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#07060b;">
-<tr><td align="center" style="padding:24px 16px;">
-<table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#0a0a1a;border-radius:16px;overflow:hidden;">
-  <!-- Header -->
-  <tr><td style="background:linear-gradient(135deg,#7c3aed,#db2777);padding:40px 32px;text-align:center;">
-    <span style="font-size:48px;">🎬</span>
-    <h1 style="font-size:24px;margin:12px 0 0;color:#fff;font-weight:700;">${title}</h1>
-  </td></tr>
-  <!-- Body -->
-  <tr><td style="padding:32px;">
-    ${body}
-  </td></tr>
-  <!-- Footer -->
-  <tr><td style="padding:0 32px 32px;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-      <tr><td style="border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;text-align:center;">
-        <p style="color:#4b5563;font-size:12px;margin:0 0 4px;">ShowBizy — Where creative projects are born.</p>
-        <p style="color:#4b5563;font-size:12px;margin:0;"><a href="https://showbizy.ai" style="color:#6b7280;text-decoration:none;">showbizy.ai</a></p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>`
-}
-
-function ctaButton(text: string, url: string): string {
-  return `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px auto;">
-<tr><td align="center" style="background:linear-gradient(135deg,#7c3aed,#db2777);border-radius:12px;">
-  <a href="${url}" style="display:inline-block;padding:14px 40px;color:#fff;text-decoration:none;font-weight:700;font-size:16px;">${text}</a>
-</td></tr>
-</table>`
-}
-
-function infoRow(label: string, value: string): string {
-  return `<tr>
-  <td style="padding:6px 0;color:#6b7280;font-size:14px;width:120px;">${label}</td>
-  <td style="padding:6px 0;color:#e5e7eb;font-size:14px;">${value}</td>
-</tr>`
-}
-
-function card(title: string, content: string): string {
-  return `<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;margin-bottom:24px;">
-  <h3 style="color:#a855f7;margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1px;">${title}</h3>
-  ${content}
-</div>`
-}
-
-function stepItem(num: number, title: string, desc: string): string {
-  return `<div style="margin-bottom:16px;">
-  <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-    <td style="vertical-align:top;width:40px;">
-      <div style="background:rgba(168,85,247,0.3);color:#a855f7;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">${num}</div>
-    </td>
-    <td style="vertical-align:top;">
-      <p style="margin:0;color:#fff;font-weight:600;font-size:14px;">${title}</p>
-      <p style="margin:4px 0 0;color:#9ca3af;font-size:13px;">${desc}</p>
-    </td>
-  </tr></table>
-</div>`
-}
-
-// ─── 1. Welcome Email (plain text style to avoid spam) ────────────────────
+// ─── 1. Welcome Email ─────────────────────────────────────────────────────
 export async function sendWelcomeEmail(user: EmailUser): Promise<void> {
   const streamsList = (user.streams || []).join(', ') || 'Not set'
   const skillsList = (user.skills || []).join(', ') || 'Not set'
 
-  const textBody = `Hey ${user.name},
+  const text = `Hey ${user.name},
 
 Welcome to ShowBizy! Your profile is live.
 
@@ -145,114 +82,71 @@ What happens next:
 2. You'll get matched to projects within 48 hours
 3. Join a project, meet your team, start creating
 
-Go to your dashboard: https://showbizy.ai/dashboard
+Go to your dashboard: ${BASE_URL}/dashboard${FOOTER_TEXT}`
 
-— The ShowBizy Team`
-
-  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
 <p>Welcome to ShowBizy! Your profile is live.</p>
 <p><strong>Here's what we have:</strong></p>
-<p>
-Name: ${user.name}<br>
-Location: ${user.city || 'Not set'}<br>
-Streams: ${streamsList}<br>
-Skills: ${skillsList}${user.portfolio ? `<br>Portfolio: <a href="${user.portfolio}">${user.portfolio}</a>` : ''}
-</p>
+<p>Name: ${user.name}<br>Location: ${user.city || 'Not set'}<br>Streams: ${streamsList}<br>Skills: ${skillsList}${user.portfolio ? `<br>Portfolio: <a href="${user.portfolio}">${user.portfolio}</a>` : ''}</p>
 <p><strong>What happens next:</strong></p>
-<ol>
-<li>Our AI scans your area for creative projects that match your skills</li>
-<li>You'll get matched to projects within 48 hours</li>
-<li>Join a project, meet your team, start creating</li>
-</ol>
-<p><a href="https://showbizy.ai/dashboard">Go to your dashboard</a></p>
-<p style="color: #666; font-size: 12px; margin-top: 24px;">— The ShowBizy Team<br><a href="https://showbizy.ai" style="color: #666;">showbizy.ai</a></p>
-</div>`
+<ol><li>Our AI scans your area for creative projects that match your skills</li><li>You'll get matched to projects within 48 hours</li><li>Join a project, meet your team, start creating</li></ol>
+<p><a href="${BASE_URL}/dashboard">Go to your dashboard</a></p>`)
 
-  try {
-    await transporter.sendMail({
-      from: FROM,
-      to: user.email,
-      subject: `Welcome to ShowBizy, ${user.name}`,
-      headers: { 'X-Priority': '3', 'Importance': 'Normal' },
-      text: textBody,
-      html: htmlBody,
-    })
-    console.log(`[email] Welcome email sent to ${user.email}`)
-  } catch (err) {
-    console.error(`[email] Failed to send welcome email to ${user.email}:`, err)
-    throw err
-  }
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `Welcome to ShowBizy, ${user.name}`, text, html })
 }
 
-// ─── 2. Project Matched ────────────────────────────────────────────────────
+// ─── 2. Project Matched ───────────────────────────────────────────────────
 export async function sendProjectMatchedEmail(user: EmailUser, project: EmailProject): Promise<void> {
   const rolesNeeded = (project.roles || []).filter(r => !r.filled).map(r => r.role).join(', ') || 'Various'
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Great news! Our AI found a project that matches your skills and interests.
-    </p>
-    ${card('Project Match', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('Project', project.title)}
-        ${infoRow('Genre', project.genre || 'N/A')}
-        ${infoRow('Location', project.location || 'N/A')}
-        ${infoRow('Timeline', project.timeline || 'N/A')}
-        ${infoRow('Roles Needed', rolesNeeded)}
-      </table>
-    `)}
-    ${project.description ? `<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 24px;">${project.description}</p>` : ''}
-    ${ctaButton('View Project →', `${BASE_URL}/projects/${project.id}`)}
-  `
+  const text = `Hey ${user.name},
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `🎯 New project match: ${project.title}`,
-    html: wrapEmail(`New Project Match`, body),
-  })
+Our AI found a project that matches your skills:
+
+${project.title}
+Genre: ${project.genre || 'N/A'}
+Location: ${project.location || 'N/A'}
+Timeline: ${project.timeline || 'N/A'}
+Roles needed: ${rolesNeeded}
+
+${project.description ? project.description.slice(0, 200) : ''}
+
+View project: ${BASE_URL}/projects/${project.id}${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p>Our AI found a project that matches your skills:</p>
+<p><strong>${project.title}</strong><br>Genre: ${project.genre || 'N/A'}<br>Location: ${project.location || 'N/A'}<br>Timeline: ${project.timeline || 'N/A'}<br>Roles needed: ${rolesNeeded}</p>
+${project.description ? `<p>${project.description.slice(0, 200)}</p>` : ''}
+<p><a href="${BASE_URL}/projects/${project.id}">View project</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `New project match: ${project.title}`, text, html })
 }
 
-// ─── 3. Team Member Joined ─────────────────────────────────────────────────
-export async function sendTeamMemberJoinedEmail(
-  teamMembers: EmailMember[],
-  newMember: EmailMember,
-  project: EmailProject
-): Promise<void> {
+// ─── 3. Team Member Joined ────────────────────────────────────────────────
+export async function sendTeamMemberJoinedEmail(teamMembers: EmailMember[], newMember: EmailMember, project: EmailProject): Promise<void> {
   const memberSkills = (newMember.skills || []).join(', ') || 'Not listed'
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey there 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      <strong style="color:#e5e7eb;">${newMember.name}</strong> just joined <strong style="color:#e5e7eb;">${project.title}</strong>!
-    </p>
-    ${card('New Team Member', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('Name', newMember.name)}
-        ${infoRow('Skills', memberSkills)}
-        ${newMember.portfolio ? infoRow('Portfolio', `<a href="${newMember.portfolio}" style="color:#a855f7;">${newMember.portfolio}</a>`) : ''}
-      </table>
-    `)}
-    <p style="color:#9ca3af;font-size:14px;margin:0 0 24px;">
-      Your team now has <strong style="color:#e5e7eb;">${teamMembers.length + 1}</strong> members. Keep the momentum going!
-    </p>
-    ${ctaButton('View Project →', `${BASE_URL}/projects/${project.id}`)}
-  `
+  const text = `${newMember.name} just joined ${project.title}!
 
-  const html = wrapEmail(`${newMember.name} joined ${project.title}`, body)
+Skills: ${memberSkills}
+${newMember.portfolio ? `Portfolio: ${newMember.portfolio}` : ''}
 
-  // Send to all existing team members (not the new one)
+Your team now has ${teamMembers.length + 1} members.
+
+View project: ${BASE_URL}/projects/${project.id}${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p><strong>${newMember.name}</strong> just joined <strong>${project.title}</strong>!</p>
+<p>Skills: ${memberSkills}${newMember.portfolio ? `<br>Portfolio: <a href="${newMember.portfolio}">${newMember.portfolio}</a>` : ''}</p>
+<p>Your team now has <strong>${teamMembers.length + 1}</strong> members.</p>
+<p><a href="${BASE_URL}/projects/${project.id}">View project</a></p>`)
+
   for (const member of teamMembers) {
     if (member.email && member.email !== newMember.email) {
       try {
-        await transporter.sendMail({
-          from: FROM,
-          to: member.email,
-          subject: `👋 ${newMember.name} joined ${project.title}`,
-          html,
-        })
+        await transporter.sendMail({ from: FROM, to: member.email, subject: `${newMember.name} joined ${project.title}`, text, html })
       } catch (err) {
         console.error(`Failed to send team-joined email to ${member.email}:`, err)
       }
@@ -260,92 +154,58 @@ export async function sendTeamMemberJoinedEmail(
   }
 }
 
-// ─── 4. Project Invitation ─────────────────────────────────────────────────
-export async function sendProjectInvitationEmail(
-  user: EmailUser,
-  project: EmailProject,
-  invitedBy: string
-): Promise<void> {
+// ─── 4. Project Invitation ────────────────────────────────────────────────
+export async function sendProjectInvitationEmail(user: EmailUser, project: EmailProject, invitedBy: string): Promise<void> {
   const rolesNeeded = (project.roles || []).filter(r => !r.filled).map(r => r.role).join(', ') || 'Various'
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      <strong style="color:#e5e7eb;">${invitedBy}</strong> thinks you'd be perfect for this project and has invited you to join.
-    </p>
-    ${card('Project Details', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('Project', project.title)}
-        ${infoRow('Genre', project.genre || 'N/A')}
-        ${infoRow('Location', project.location || 'N/A')}
-        ${infoRow('Timeline', project.timeline || 'N/A')}
-        ${infoRow('Roles Needed', rolesNeeded)}
-      </table>
-    `)}
-    ${project.description ? `<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 24px;">${project.description}</p>` : ''}
-    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px auto;">
-      <tr>
-        <td align="center" style="background:linear-gradient(135deg,#7c3aed,#db2777);border-radius:12px;">
-          <a href="${BASE_URL}/projects/${project.id}?action=accept" style="display:inline-block;padding:14px 32px;color:#fff;text-decoration:none;font-weight:700;font-size:16px;">Accept Invitation ✓</a>
-        </td>
-        <td width="12"></td>
-        <td align="center" style="border:1px solid rgba(255,255,255,0.2);border-radius:12px;">
-          <a href="${BASE_URL}/projects/${project.id}?action=decline" style="display:inline-block;padding:14px 32px;color:#9ca3af;text-decoration:none;font-weight:700;font-size:16px;">Decline</a>
-        </td>
-      </tr>
-    </table>
-  `
+  const text = `Hey ${user.name},
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `🎬 You've been invited to join ${project.title}`,
-    html: wrapEmail(`You're Invited!`, body),
-  })
+${invitedBy} thinks you'd be perfect for this project and has invited you to join.
+
+${project.title}
+Genre: ${project.genre || 'N/A'}
+Location: ${project.location || 'N/A'}
+Roles needed: ${rolesNeeded}
+
+Accept: ${BASE_URL}/projects/${project.id}?action=accept
+Decline: ${BASE_URL}/projects/${project.id}?action=decline${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p><strong>${invitedBy}</strong> thinks you'd be perfect for this project and has invited you to join.</p>
+<p><strong>${project.title}</strong><br>Genre: ${project.genre || 'N/A'}<br>Location: ${project.location || 'N/A'}<br>Roles needed: ${rolesNeeded}</p>
+<p><a href="${BASE_URL}/projects/${project.id}?action=accept">Accept invitation</a> | <a href="${BASE_URL}/projects/${project.id}?action=decline">Decline</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `You've been invited to join ${project.title}`, text, html })
 }
 
-// ─── 5. Project Milestone ──────────────────────────────────────────────────
+// ─── 5. Project Milestone ─────────────────────────────────────────────────
 const MILESTONE_NEXT: Record<string, string> = {
   'Pre-production': 'Production — Time to start shooting!',
   'Production': 'Post-production — Editing, VFX, and sound design',
   'Post-production': 'Published — Ready for the world!',
-  'Published': 'Congratulations — Your project is live! 🎉',
+  'Published': 'Your project is live!',
 }
 
-export async function sendProjectMilestoneEmail(
-  teamMembers: EmailMember[],
-  project: EmailProject,
-  milestone: string
-): Promise<void> {
+export async function sendProjectMilestoneEmail(teamMembers: EmailMember[], project: EmailProject, milestone: string): Promise<void> {
   const whatsNext = MILESTONE_NEXT[milestone] || 'Keep pushing forward!'
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey team 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      <strong style="color:#e5e7eb;">${project.title}</strong> just moved to a new phase!
-    </p>
-    ${card('Milestone Update', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('Project', project.title)}
-        ${infoRow('Current Phase', `<strong style="color:#a855f7;">${milestone}</strong>`)}
-        ${infoRow("What's Next", whatsNext)}
-      </table>
-    `)}
-    <p style="color:#9ca3af;font-size:14px;margin:0 0 8px;">🎉 Great progress team! Keep the momentum going.</p>
-    ${ctaButton('View Project →', `${BASE_URL}/projects/${project.id}`)}
-  `
+  const text = `${project.title} just moved to a new phase!
 
-  const html = wrapEmail(`${project.title} → ${milestone}`, body)
+Current phase: ${milestone}
+What's next: ${whatsNext}
+
+View project: ${BASE_URL}/projects/${project.id}${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p><strong>${project.title}</strong> just moved to a new phase!</p>
+<p>Current phase: <strong>${milestone}</strong><br>What's next: ${whatsNext}</p>
+<p><a href="${BASE_URL}/projects/${project.id}">View project</a></p>`)
 
   for (const member of teamMembers) {
     if (member.email) {
       try {
-        await transporter.sendMail({
-          from: FROM,
-          to: member.email,
-          subject: `🏁 ${project.title} moved to ${milestone}`,
-          html,
-        })
+        await transporter.sendMail({ from: FROM, to: member.email, subject: `${project.title} moved to ${milestone}`, text, html })
       } catch (err) {
         console.error(`Failed to send milestone email to ${member.email}:`, err)
       }
@@ -353,431 +213,278 @@ export async function sendProjectMilestoneEmail(
   }
 }
 
-// ─── 6. New Message (with throttle) ────────────────────────────────────────
-export async function sendNewMessageEmail(
-  user: EmailUser,
-  sender: { name: string },
-  project: EmailProject,
-  messagePreview: string
-): Promise<{ sent: boolean; throttled: boolean }> {
+// ─── 6. New Message (with throttle) ───────────────────────────────────────
+export async function sendNewMessageEmail(user: EmailUser, sender: { name: string }, project: EmailProject, messagePreview: string): Promise<{ sent: boolean; throttled: boolean }> {
   const throttleKey = `${user.email}:${project.id}`
   const lastSent = messageThrottle[throttleKey] || 0
-  const now = Date.now()
+  if (Date.now() - lastSent < THROTTLE_MS) return { sent: false, throttled: true }
 
-  if (now - lastSent < THROTTLE_MS) {
-    return { sent: false, throttled: true }
-  }
+  const preview = messagePreview.length > 200 ? messagePreview.slice(0, 200) + '...' : messagePreview
 
-  const preview = messagePreview.length > 200 ? messagePreview.slice(0, 200) + '…' : messagePreview
+  const text = `Hey ${user.name},
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      You have a new message in <strong style="color:#e5e7eb;">${project.title}</strong>.
-    </p>
-    ${card(`Message from ${sender.name}`, `
-      <p style="color:#e5e7eb;font-size:14px;line-height:1.6;margin:0;font-style:italic;">"${preview}"</p>
-    `)}
-    ${ctaButton('Reply in ShowBizy →', `${BASE_URL}/projects/${project.id}?tab=chat`)}
-  `
+New message from ${sender.name} in ${project.title}:
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `💬 New message from ${sender.name} in ${project.title}`,
-    html: wrapEmail(`New Message`, body),
-  })
+"${preview}"
 
-  messageThrottle[throttleKey] = now
+Reply: ${BASE_URL}/projects/${project.id}?tab=chat${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p>New message from <strong>${sender.name}</strong> in <strong>${project.title}</strong>:</p>
+<blockquote style="border-left:3px solid #ddd;padding-left:12px;margin:12px 0;color:#555;">${preview}</blockquote>
+<p><a href="${BASE_URL}/projects/${project.id}?tab=chat">Reply in ShowBizy</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `New message from ${sender.name} in ${project.title}`, text, html })
+  messageThrottle[throttleKey] = Date.now()
   return { sent: true, throttled: false }
 }
 
-// ─── 7. Weekly Digest ──────────────────────────────────────────────────────
+// ─── 7. Weekly Digest ─────────────────────────────────────────────────────
 export async function sendWeeklyDigestEmail(user: EmailUser, stats: WeeklyStats): Promise<void> {
-  const trendingList = stats.trendingProjects.map(p =>
-    `<tr><td style="padding:4px 0;"><a href="${BASE_URL}/projects/${p.id}" style="color:#a855f7;text-decoration:none;font-size:14px;">→ ${p.title}</a></td></tr>`
-  ).join('')
+  const trendingList = stats.trendingProjects.map(p => `- ${p.title}: ${BASE_URL}/projects/${p.id}`).join('\n')
+  const trendingHtml = stats.trendingProjects.map(p => `<li><a href="${BASE_URL}/projects/${p.id}">${p.title}</a></li>`).join('')
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 👋</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Here's your weekly ShowBizy roundup.
-    </p>
-    ${card('Your Week at a Glance', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('🎯 New Matches', `<strong style="color:#a855f7;">${stats.matchCount}</strong> projects matched`)}
-        ${infoRow('🎬 Active Projects', `<strong style="color:#a855f7;">${stats.activeProjects}</strong> in progress`)}
-        ${infoRow('👥 New Members', `<strong style="color:#a855f7;">${stats.newMembers}</strong> joined near you`)}
-      </table>
-    `)}
-    ${stats.trendingProjects.length > 0 ? card('🔥 Trending Projects', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${trendingList}
-      </table>
-    `) : ''}
-    ${ctaButton('Explore Projects →', `${BASE_URL}/projects`)}
-  `
+  const text = `Hey ${user.name},
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `📊 Your ShowBizy week: ${stats.matchCount} new matches`,
-    html: wrapEmail(`Your Weekly Digest`, body),
-  })
+Your weekly ShowBizy roundup:
+
+- ${stats.matchCount} new project matches
+- ${stats.activeProjects} active projects
+- ${stats.newMembers} new members near you
+
+${stats.trendingProjects.length > 0 ? `Trending:\n${trendingList}` : ''}
+
+Browse projects: ${BASE_URL}/projects${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p>Your weekly ShowBizy roundup:</p>
+<ul><li><strong>${stats.matchCount}</strong> new project matches</li><li><strong>${stats.activeProjects}</strong> active projects</li><li><strong>${stats.newMembers}</strong> new members near you</li></ul>
+${stats.trendingProjects.length > 0 ? `<p><strong>Trending:</strong></p><ul>${trendingHtml}</ul>` : ''}
+<p><a href="${BASE_URL}/projects">Browse projects</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `Your ShowBizy week: ${stats.matchCount} new matches`, text, html })
 }
 
-// ─── 8. Weekly Digest for Cron (plain text style) ─────────────────────────
-interface DigestProject {
-  id: string
-  title: string
-  stream: string
-  location: string
-}
-
-interface DigestJob {
-  id: string
-  title: string
-  company: string
-  location: string
-  salary: string
-}
+// ─── 8. Weekly Digest for Cron ────────────────────────────────────────────
+interface DigestProject { id: string; title: string; stream: string; location: string }
+interface DigestJob { id: string; title: string; company: string; location: string; salary: string }
 
 export async function sendCronWeeklyDigest(
   user: { name: string; email: string; is_pro?: boolean },
-  projects: DigestProject[],
-  jobs: DigestJob[],
+  projects: DigestProject[], jobs: DigestJob[],
   stats: { totalNewProjects: number; totalNewJobs: number }
 ): Promise<void> {
-  const projectsList = projects.map(p =>
-    `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`
-  ).join('\n')
+  const projectsList = projects.map(p => `- ${p.title} (${p.stream}, ${p.location})\n  ${BASE_URL}/projects/${p.id}`).join('\n')
+  const jobsList = jobs.map(j => `- ${j.title} at ${j.company} — ${j.salary}\n  ${BASE_URL}/jobs/${j.id}`).join('\n')
+  const proCta = user.is_pro ? '' : `\n\nUpgrade to Pro to apply: ${BASE_URL}/pricing`
 
-  const jobsList = jobs.map(j =>
-    `- ${j.title} at ${j.company} — ${j.salary}\n  https://showbizy.ai/jobs/${j.id}`
-  ).join('\n')
+  const text = `Hey ${user.name},
 
-  const proCta = user.is_pro
-    ? ''
-    : '\n---\nUpgrade to Pro to apply to all projects and jobs: https://showbizy.ai/pricing\n'
-
-  const textBody = `Hey ${user.name},
-
-Here's what's new on ShowBizy this week:
-
-${stats.totalNewProjects} new AI projects | ${stats.totalNewJobs} real jobs
+This week on ShowBizy: ${stats.totalNewProjects} new projects, ${stats.totalNewJobs} real jobs.
 
 ${projects.length > 0 ? `NEW PROJECTS:\n${projectsList}` : ''}
+${jobs.length > 0 ? `\nREAL JOBS:\n${jobsList}` : ''}${proCta}
 
-${jobs.length > 0 ? `REAL JOBS:\n${jobsList}` : ''}
-${proCta}
-Browse all: https://showbizy.ai/projects
+Browse all: ${BASE_URL}/projects${FOOTER_TEXT}`
 
-— ShowBizy`
+  const projectsHtml = projects.map(p => `<li><a href="${BASE_URL}/projects/${p.id}"><strong>${p.title}</strong></a> — ${p.stream}, ${p.location}</li>`).join('')
+  const jobsHtml = jobs.map(j => `<li><a href="${BASE_URL}/jobs/${j.id}"><strong>${j.title}</strong> at ${j.company}</a> — ${j.salary}</li>`).join('')
+  const proCtaHtml = user.is_pro ? '' : `<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;">Upgrade to Pro to apply to all projects and jobs. <a href="${BASE_URL}/pricing">View plans</a></p>`
 
-  const projectsHtml = projects.map(p =>
-    `<li style="margin-bottom:8px;"><a href="https://showbizy.ai/projects/${p.id}" style="color:#1a1a1a;text-decoration:none;"><strong>${p.title}</strong></a> — ${p.stream}, ${p.location}</li>`
-  ).join('')
-
-  const jobsHtml = jobs.map(j =>
-    `<li style="margin-bottom:8px;"><a href="https://showbizy.ai/jobs/${j.id}" style="color:#1a1a1a;text-decoration:none;"><strong>${j.title}</strong> at ${j.company}</a> — ${j.salary}</li>`
-  ).join('')
-
-  const proCtaHtml = user.is_pro
-    ? ''
-    : `<p style="margin-top:24px;padding:16px;background:#f8f8f8;border-radius:8px;"><strong>Upgrade to Pro</strong> to apply to all projects and jobs.<br><a href="https://showbizy.ai/pricing" style="color:#7c3aed;">View Pro plans</a></p>`
-
-  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
-<p>Here's what's new on ShowBizy this week:</p>
-<p><strong>${stats.totalNewProjects} new AI projects</strong> | <strong>${stats.totalNewJobs} real jobs</strong></p>
-${projects.length > 0 ? `<p><strong>New Projects</strong></p><ul style="padding-left:20px;">${projectsHtml}</ul>` : ''}
-${jobs.length > 0 ? `<p><strong>Real Jobs</strong></p><ul style="padding-left:20px;">${jobsHtml}</ul>` : ''}
+<p>This week on ShowBizy: <strong>${stats.totalNewProjects} new projects</strong>, <strong>${stats.totalNewJobs} real jobs</strong>.</p>
+${projects.length > 0 ? `<p><strong>New Projects</strong></p><ul>${projectsHtml}</ul>` : ''}
+${jobs.length > 0 ? `<p><strong>Real Jobs</strong></p><ul>${jobsHtml}</ul>` : ''}
 ${proCtaHtml}
-<p><a href="https://showbizy.ai/projects">Browse all projects</a> | <a href="https://showbizy.ai/jobs">Browse all jobs</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
-</div>`
+<p><a href="${BASE_URL}/projects">Browse all projects</a></p>`)
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `Your ShowBizy week: ${stats.totalNewProjects} new projects in your area`,
-    headers: { 'X-Priority': '1', 'Importance': 'High' },
-    text: textBody,
-    html: htmlBody,
-  })
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `Your ShowBizy week: ${stats.totalNewProjects} new projects`, text, html })
 }
 
-// ─── 9. Pro Upgrade Confirmation ───────────────────────────────────────────
-export async function sendProUpgradeEmail(
-  user: { name: string; email: string },
-  amountPaid?: string
-): Promise<void> {
-  const amount = amountPaid || '£19/month'
+// ─── 9. Pro Upgrade Confirmation ──────────────────────────────────────────
+export async function sendProUpgradeEmail(user: { name: string; email: string }, amountPaid?: string): Promise<void> {
+  const amount = amountPaid || '£9/month'
 
-  const benefitsHtml = [
-    'Unlimited project applications',
-    'Priority AI matching',
-    'Featured profile badge ✨',
-    'Direct messaging with creators',
-    'Weekly curated project digest',
-    'Early access to new features',
-  ].map(b =>
-    `<tr><td style="padding:6px 0;color:#e5e7eb;font-size:14px;">
-      <span style="color:#a855f7;margin-right:8px;">✓</span>${b}
-    </td></tr>`
-  ).join('')
+  const text = `Hey ${user.name},
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 🎉</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Welcome to <strong style="color:#a855f7;">ShowBizy Pro</strong>! Your upgrade is confirmed and all Pro features are now unlocked.
-    </p>
-    ${card('Your Pro Benefits', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${benefitsHtml}
-      </table>
-    `)}
-    ${card('Payment Receipt', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('Plan', 'ShowBizy Pro')}
-        ${infoRow('Amount', `<strong style="color:#e5e7eb;">${amount}</strong>`)}
-        ${infoRow('Status', '<span style="color:#22c55e;">✓ Confirmed</span>')}
-      </table>
-    `)}
-    <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 24px;">
-      You can manage your subscription anytime from your dashboard settings. Cancel anytime — no questions asked.
-    </p>
-    ${ctaButton('Go to Dashboard →', `${BASE_URL}/dashboard`)}
-  `
+Welcome to ShowBizy Pro! Your upgrade is confirmed.
 
-  try {
-    await transporter.sendMail({
-      from: FROM,
-      to: user.email,
-      subject: `⚡ You're now a ShowBizy Pro member!`,
-      html: wrapEmail(`You're ShowBizy Pro! 🎉`, body),
-    })
-    console.log(`[email] Pro upgrade email sent to ${user.email}`)
-  } catch (err) {
-    console.error(`[email] Failed to send Pro upgrade email to ${user.email}:`, err)
-    throw err
-  }
+What's unlocked:
+- Unlimited project applications
+- Priority AI matching
+- Apply to real industry jobs
+- Upload CV + send cover letters
+- Weekly curated project digest
+
+Payment: ${amount} — Confirmed
+
+Manage your subscription from your dashboard.
+
+Go to dashboard: ${BASE_URL}/dashboard${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p>Welcome to <strong>ShowBizy Pro</strong>! Your upgrade is confirmed.</p>
+<p><strong>What's unlocked:</strong></p>
+<ul><li>Unlimited project applications</li><li>Priority AI matching</li><li>Apply to real industry jobs</li><li>Upload CV + send cover letters</li><li>Weekly curated project digest</li></ul>
+<p>Payment: <strong>${amount}</strong> — Confirmed</p>
+<p>You can manage your subscription anytime from your dashboard. Cancel anytime.</p>
+<p><a href="${BASE_URL}/dashboard">Go to dashboard</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `You're now a ShowBizy Pro member`, text, html })
 }
 
-// ─── Studio Upgrade Email ─────────────────────────────────────────────────
-export async function sendStudioUpgradeEmail(
-  user: { name: string; email: string },
-  amountPaid?: string
-): Promise<void> {
+// ─── 10. Studio Upgrade Email ─────────────────────────────────────────────
+export async function sendStudioUpgradeEmail(user: { name: string; email: string }, amountPaid?: string): Promise<void> {
   const amount = amountPaid || '£29/month'
 
-  const benefitsHtml = [
-    '🎬 Post your own creative projects',
-    '🤖 AI auto-matches you with the right talent',
-    '📋 Manage applications in your Studio dashboard',
-    '✨ Verified Studio badge on your profile',
-    '⭐ Featured placement in browse',
-    '📊 Project analytics & insights',
-    '🚀 Early access to all new features',
-  ].map(b =>
-    `<tr><td style="padding:6px 0;color:#e5e7eb;font-size:14px;">
-      <span style="color:#F5B731;margin-right:8px;">✓</span>${b}
-    </td></tr>`
-  ).join('')
+  const text = `Hey ${user.name},
 
-  const body = `
-    <p style="font-size:18px;color:#e5e7eb;margin:0 0 24px;">Hey ${user.name} 🎬</p>
-    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Welcome to <strong style="color:#F5B731;">ShowBizy Studio</strong>! You can now post your own creative projects and have our AI find the perfect talent to bring them to life.
-    </p>
-    ${card('Your Studio Benefits', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${benefitsHtml}
-      </table>
-    `)}
-    ${card('Payment Receipt', `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        ${infoRow('Plan', 'ShowBizy Studio')}
-        ${infoRow('Amount', `<strong style="color:#e5e7eb;">${amount}</strong>`)}
-        ${infoRow('Status', '<span style="color:#22c55e;">✓ Confirmed</span>')}
-      </table>
-    `)}
-    <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 24px;">
-      Ready to post your first project? Head to your Studio dashboard to get started. Our AI will scan our creative pool and notify the best matches automatically.
-    </p>
-    ${ctaButton('Post Your First Project →', `${BASE_URL}/studio/post-project`)}
-  `
+Welcome to ShowBizy Studio! You can now post your own creative projects.
 
-  try {
-    await transporter.sendMail({
-      from: FROM,
-      to: user.email,
-      subject: `🎬 Welcome to ShowBizy Studio!`,
-      html: wrapEmail(`You're ShowBizy Studio! 🎬`, body),
-    })
-    console.log(`[email] Studio upgrade email sent to ${user.email}`)
-  } catch (err) {
-    console.error(`[email] Failed to send Studio upgrade email to ${user.email}:`, err)
-    throw err
-  }
+What's unlocked:
+- Post your own creative projects
+- AI auto-matches you with the right talent
+- Manage applications in your Studio dashboard
+- Verified Studio badge on your profile
+- Featured placement in browse
+
+Payment: ${amount} — Confirmed
+
+Post your first project: ${BASE_URL}/studio/post-project${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p>Welcome to <strong>ShowBizy Studio</strong>! You can now post your own creative projects.</p>
+<p><strong>What's unlocked:</strong></p>
+<ul><li>Post your own creative projects</li><li>AI auto-matches you with the right talent</li><li>Manage applications in your Studio dashboard</li><li>Verified Studio badge on your profile</li><li>Featured placement in browse</li></ul>
+<p>Payment: <strong>${amount}</strong> — Confirmed</p>
+<p><a href="${BASE_URL}/studio/post-project">Post your first project</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `Welcome to ShowBizy Studio`, text, html })
 }
 
-// ─── 10. Drip Sequence Emails (plain text for inbox placement) ────────────
+// ─── 11. Drip Sequence Emails ─────────────────────────────────────────────
 
-interface DripProject {
-  id: string
-  title: string
-  stream: string
-  location: string
-}
+interface DripProject { id: string; title: string; stream: string; location: string }
 
-// Day 1: "AI is scanning your area"
 export async function sendDripDay1(user: { name: string; email: string; city?: string }): Promise<void> {
   const city = user.city || 'your area'
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `${user.name}, our AI is scanning ${city} for you`,
-    headers: { 'X-Priority': '1', 'Importance': 'High' },
-    text: `Hey ${user.name},\n\nWelcome to ShowBizy! Our AI is now actively scanning ${city} for creative projects that match your skills.\n\nHere's what happens next:\n- We generate new AI projects in your area every day\n- When a project matches your skills, you'll be the first to know\n- Pro members can apply directly and get priority matching\n\nBrowse current projects: https://showbizy.ai/projects\n\n— ShowBizy`,
-    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+  const text = `Hey ${user.name},
+
+Welcome to ShowBizy! Our AI is now scanning ${city} for creative projects that match your skills.
+
+What happens next:
+- We generate new AI projects in your area every day
+- When a project matches your skills, you'll be the first to know
+- Pro members can apply directly and get priority matching
+
+Browse projects: ${BASE_URL}/projects${FOOTER_TEXT}`
+
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
-<p>Welcome to ShowBizy! Our AI is now actively scanning <strong>${city}</strong> for creative projects that match your skills.</p>
-<p>Here's what happens next:</p>
-<ul>
-<li>We generate new AI projects in your area every day</li>
-<li>When a project matches your skills, you'll be the first to know</li>
-<li>Pro members can apply directly and get priority matching</li>
-</ul>
-<p><a href="https://showbizy.ai/projects" style="color:#7c3aed;font-weight:bold;">Browse current projects</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
-</div>`,
-  })
+<p>Welcome to ShowBizy! Our AI is now scanning <strong>${city}</strong> for creative projects that match your skills.</p>
+<p>What happens next:</p>
+<ul><li>We generate new AI projects in your area every day</li><li>When a project matches your skills, you'll be the first to know</li><li>Pro members can apply directly and get priority matching</li></ul>
+<p><a href="${BASE_URL}/projects">Browse projects</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `${user.name}, our AI is scanning ${city} for you`, text, html })
 }
 
-// Day 3: "AI found projects for you"
-export async function sendDripDay3(
-  user: { name: string; email: string; city?: string },
-  matchedProjects: DripProject[]
-): Promise<void> {
-  const count = matchedProjects.length
+export async function sendDripDay3(user: { name: string; email: string; city?: string }, matchedProjects: DripProject[]): Promise<void> {
   const city = user.city || 'your area'
+  const count = matchedProjects.length
+  const listText = matchedProjects.slice(0, 3).map(p => `- ${p.title} (${p.stream}, ${p.location})\n  ${BASE_URL}/projects/${p.id}`).join('\n')
+  const listHtml = matchedProjects.slice(0, 3).map(p => `<li><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br><a href="${BASE_URL}/projects/${p.id}">View project</a></li>`).join('')
 
-  const projectListHtml = matchedProjects.slice(0, 3).map(p =>
-    `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
-    <a href="https://showbizy.ai/projects/${p.id}" style="color:#7c3aed;">View project</a></li>`
-  ).join('')
+  const text = `Hey ${user.name},
 
-  const projectListText = matchedProjects.slice(0, 3).map(p =>
-    `- ${p.title} (${p.stream}, ${p.location})\n  https://showbizy.ai/projects/${p.id}`
-  ).join('\n')
+Our AI found ${count} project${count > 1 ? 's' : ''} in ${city} that match your skills:
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `${count} project${count > 1 ? 's' : ''} found for you in ${city}`,
-    headers: { 'X-Priority': '1', 'Importance': 'High' },
-    text: `Hey ${user.name},\n\nOur AI found ${count} project${count > 1 ? 's' : ''} in ${city} that match your skills:\n\n${projectListText}\n\nUpgrade to Pro to apply and get priority matching: https://showbizy.ai/pricing\n\n— ShowBizy`,
-    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+${listText}
+
+Upgrade to Pro to apply: ${BASE_URL}/pricing${FOOTER_TEXT}`
+
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
 <p>Our AI found <strong>${count} project${count > 1 ? 's' : ''}</strong> in ${city} that match your skills:</p>
-<ul style="padding-left:20px;">${projectListHtml}</ul>
-<p style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px;"><strong>Upgrade to Pro</strong> to apply directly and get priority matching.<br><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;">View Pro plans — £9/mo</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
-</div>`,
-  })
+<ul>${listHtml}</ul>
+<p>Upgrade to Pro to apply and get priority matching. <a href="${BASE_URL}/pricing">View plans</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `${count} project${count > 1 ? 's' : ''} found for you in ${city}`, text, html })
 }
 
-// Day 7: "You've been matched but can't apply"
-export async function sendDripDay7(
-  user: { name: string; email: string; city?: string },
-  totalMatches: number,
-  topProjects: DripProject[]
-): Promise<void> {
+export async function sendDripDay7(user: { name: string; email: string; city?: string }, totalMatches: number, topProjects: DripProject[]): Promise<void> {
   const city = user.city || 'your area'
+  const listHtml = topProjects.slice(0, 3).map(p => `<li><strong>${p.title}</strong> — ${p.stream}, ${p.location}</li>`).join('')
 
-  const projectListHtml = topProjects.slice(0, 3).map(p =>
-    `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
-    <span style="color:#999;">🔒 <em>Pro required to apply</em></span></li>`
-  ).join('')
+  const text = `Hey ${user.name},
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `${user.name}, you've been matched to ${totalMatches} projects — but can't apply yet`,
-    headers: { 'X-Priority': '1', 'Importance': 'High' },
-    text: `Hey ${user.name},\n\nIn the last week, our AI matched you to ${totalMatches} projects in ${city}.\n\nBut as a free member, you can't apply to any of them.\n\nHere's what Pro members get:\n- Apply to all AI-generated projects\n- Apply to real industry jobs (BBC, Netflix, etc.)\n- Priority AI matching for your skills\n- Upload CV + send cover letters\n\nUpgrade now: https://showbizy.ai/pricing\n\n— ShowBizy`,
-    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+In the last week, our AI matched you to ${totalMatches} projects in ${city}. But as a free member, you can't apply to any of them.
+
+Pro members get:
+- Apply to all AI-generated projects
+- Apply to real industry jobs
+- Priority AI matching
+- Upload CV + send cover letters
+
+Upgrade now: ${BASE_URL}/pricing${FOOTER_TEXT}`
+
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
-<p>In the last week, our AI matched you to <strong>${totalMatches} projects</strong> in ${city}.</p>
-<p>But as a free member, <strong>you can't apply to any of them.</strong></p>
-<p>Projects you're missing:</p>
-<ul style="padding-left:20px;">${projectListHtml}</ul>
-<p>Here's what Pro members get:</p>
-<ul>
-<li>Apply to all AI-generated projects</li>
-<li>Apply to real industry jobs (BBC, Netflix, etc.)</li>
-<li>Priority AI matching for your skills</li>
-<li>Upload CV + send cover letters</li>
-</ul>
-<p style="margin-top:16px;padding:14px;background:#f8f8f8;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;font-size:16px;">Upgrade to Pro — £9/mo</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
-</div>`,
-  })
+<p>In the last week, our AI matched you to <strong>${totalMatches} projects</strong> in ${city}. But as a free member, you can't apply to any of them.</p>
+<ul>${listHtml}</ul>
+<p>Pro members get:</p>
+<ul><li>Apply to all AI-generated projects</li><li>Apply to real industry jobs</li><li>Priority AI matching</li><li>Upload CV + send cover letters</li></ul>
+<p><a href="${BASE_URL}/pricing">Upgrade to Pro</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `${user.name}, you've been matched to ${totalMatches} projects`, text, html })
 }
 
-// Day 14: "Projects closing soon — last chance"
-export async function sendDripDay14(
-  user: { name: string; email: string; city?: string },
-  totalMatches: number,
-  closingProjects: DripProject[]
-): Promise<void> {
+export async function sendDripDay14(user: { name: string; email: string; city?: string }, totalMatches: number, closingProjects: DripProject[]): Promise<void> {
   const city = user.city || 'your area'
+  const listHtml = closingProjects.slice(0, 3).map(p => `<li><strong>${p.title}</strong> — ${p.stream}, ${p.location}</li>`).join('')
 
-  const projectListHtml = closingProjects.slice(0, 3).map(p =>
-    `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}<br>
-    <span style="color:#cc0000;">⏳ Closing soon</span></li>`
-  ).join('')
+  const text = `Hey ${user.name},
 
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `${totalMatches} projects closing soon in ${city} — don't miss out`,
-    headers: { 'X-Priority': '1', 'Importance': 'High' },
-    text: `Hey ${user.name},\n\nYou've been on ShowBizy for 2 weeks now, and our AI has matched you to ${totalMatches} projects in ${city}.\n\nSeveral are closing soon — once they're full, they're gone.\n\nPro members are already applying. Don't let the right opportunity pass.\n\nUpgrade now: https://showbizy.ai/pricing\n\n— ShowBizy`,
-    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+You've been on ShowBizy for 2 weeks. Our AI has matched you to ${totalMatches} projects in ${city}. Several are closing soon.
+
+Pro members are already applying. Don't let the right opportunity pass.
+
+Upgrade now: ${BASE_URL}/pricing${FOOTER_TEXT}`
+
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
-<p>You've been on ShowBizy for 2 weeks now, and our AI has matched you to <strong>${totalMatches} projects</strong> in ${city}.</p>
-<p><strong>Several are closing soon</strong> — once they're full, they're gone:</p>
-<ul style="padding-left:20px;">${projectListHtml}</ul>
+<p>You've been on ShowBizy for 2 weeks. Our AI has matched you to <strong>${totalMatches} projects</strong> in ${city}.</p>
+<p><strong>Several are closing soon:</strong></p>
+<ul>${listHtml}</ul>
 <p>Pro members are already applying. Don't let the right opportunity pass.</p>
-<p style="margin-top:16px;padding:14px;background:#f8f8f8;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#7c3aed;font-weight:bold;font-size:16px;">Upgrade to Pro — £9/mo</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
-</div>`,
-  })
+<p><a href="${BASE_URL}/pricing">Upgrade to Pro</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `${totalMatches} projects closing soon in ${city}`, text, html })
 }
 
-// Match-triggered: "You just matched a project but can't apply"
-export async function sendMatchConversionEmail(
-  user: { name: string; email: string },
-  project: DripProject
-): Promise<void> {
-  await transporter.sendMail({
-    from: FROM,
-    to: user.email,
-    subject: `You matched "${project.title}" — upgrade to apply`,
-    headers: { 'X-Priority': '1', 'Importance': 'High' },
-    text: `Hey ${user.name},\n\nGreat news — our AI just matched you to a new project:\n\n${project.title}\nStream: ${project.stream}\nLocation: ${project.location}\n\nThis project needs someone with your exact skills. But you need Pro to apply.\n\nUpgrade now: https://showbizy.ai/pricing\n\n— ShowBizy`,
-    html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+export async function sendMatchConversionEmail(user: { name: string; email: string }, project: DripProject): Promise<void> {
+  const text = `Hey ${user.name},
+
+Our AI just matched you to a new project:
+
+${project.title}
+Stream: ${project.stream}
+Location: ${project.location}
+
+This project needs someone with your skills. Upgrade to Pro to apply.
+
+Upgrade: ${BASE_URL}/pricing${FOOTER_TEXT}`
+
+  const html = plainHtml(`
 <p>Hey ${user.name},</p>
-<p>Great news — our AI just matched you to a new project:</p>
-<div style="padding:16px;background:#f8f8f8;border-radius:8px;border-left:4px solid #7c3aed;margin:16px 0;">
-<strong>${project.title}</strong><br>
-${project.stream} — ${project.location}
-</div>
-<p>This project needs someone with <strong>your exact skills</strong>. But you need Pro to apply.</p>
-<p style="margin-top:16px;padding:14px;background:#7c3aed;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/pricing" style="color:#fff;font-weight:bold;font-size:16px;text-decoration:none;">Upgrade to Pro — £9/mo</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
-</div>`,
-  })
+<p>Our AI just matched you to a new project:</p>
+<p style="padding:12px;background:#f8f8f8;border-radius:8px;border-left:3px solid #7c3aed;"><strong>${project.title}</strong><br>${project.stream} — ${project.location}</p>
+<p>This project needs someone with your skills. <a href="${BASE_URL}/pricing">Upgrade to Pro to apply</a></p>`)
+
+  await transporter.sendMail({ from: FROM, to: user.email, subject: `You matched "${project.title}" — upgrade to apply`, text, html })
 }
