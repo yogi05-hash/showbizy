@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     // Send welcome email to Studio user
     try {
       await transporter.sendMail({
-        from: '"ShowBizy" <admin@showbizy.ai>',
+        from: '"ShowBizy" <hello@bilabs.ai>',
         to: email,
         subject: autoVerified
           ? `🎬 Welcome to ShowBizy Studio, ${company_name}!`
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
       </div>
       <p style="color: #94a3b8; font-size: 14px;">You'll receive an email the moment your Studio is approved. No payment is required until then.</p>
     `}
-    <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Questions? Reply to this email or contact admin@showbizy.ai</p>
+    <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Questions? Reply to this email or contact hello@bilabs.ai</p>
   </div>
 </div>`,
       })
@@ -169,8 +169,8 @@ export async function POST(request: Request) {
     // Notify admin of Studio signup — plain text style to avoid Gmail Promotions tab
     try {
       await transporter.sendMail({
-        from: '"ShowBizy" <admin@showbizy.ai>',
-        to: 'yogibot05@gmail.com, admin@showbizy.ai, hello@bilabs.ai',
+        from: '"ShowBizy" <hello@bilabs.ai>',
+        to: 'yogibot05@gmail.com, hello@bilabs.ai, hello@bilabs.ai',
         replyTo: email,
         subject: `New Studio signup: ${company_name} — Trust ${trustScore}/100`,
         headers: {

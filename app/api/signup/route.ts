@@ -82,8 +82,8 @@ export async function POST(request: Request) {
     // Notify admin of new signup — plain text style to avoid Gmail Promotions tab
     try {
       await transporter.sendMail({
-        from: '"ShowBizy" <admin@showbizy.ai>',
-        to: 'yogibot05@gmail.com, admin@showbizy.ai, hello@bilabs.ai',
+        from: '"ShowBizy" <hello@bilabs.ai>',
+        to: 'yogibot05@gmail.com, hello@bilabs.ai, hello@bilabs.ai',
         replyTo: email,
         subject: `New signup: ${name} — ${city || 'Unknown'}`,
         headers: {

@@ -45,7 +45,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold mb-3 text-amber-400">3. Account Registration</h2>
             <p className="text-white/70 leading-relaxed">
-              You agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your password and for all activity that occurs under your account. Notify us immediately at admin@showbizy.ai of any unauthorized access.
+              You agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your password and for all activity that occurs under your account. Notify us immediately at hello@bilabs.ai of any unauthorized access.
             </p>
           </section>
 
@@ -132,7 +132,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold mb-3 text-amber-400">12. Termination</h2>
             <p className="text-white/70 leading-relaxed">
-              You may terminate your account at any time by emailing admin@showbizy.ai. We may terminate or suspend accounts for violations of these Terms, fraud, or abuse. Upon termination, your right to use the Service ceases immediately.
+              You may terminate your account at any time by emailing hello@bilabs.ai. We may terminate or suspend accounts for violations of these Terms, fraud, or abuse. Upon termination, your right to use the Service ceases immediately.
             </p>
           </section>
 
@@ -161,7 +161,7 @@ export default function TermsPage() {
               <p className="text-white/60 text-sm">Camden, London WC2H 9JQ</p>
               <p className="text-white/60 text-sm">United Kingdom</p>
               <p className="text-white/60 text-sm mt-2">
-                Email: <a href="mailto:admin@showbizy.ai" className="text-amber-400 hover:text-amber-300">admin@showbizy.ai</a>
+                Email: <a href="mailto:hello@bilabs.ai" className="text-amber-400 hover:text-amber-300">hello@bilabs.ai</a>
               </p>
             </div>
           </section>

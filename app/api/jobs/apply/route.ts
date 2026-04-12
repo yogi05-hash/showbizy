@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     try {
       const { transporter } = await import('@/lib/email')
       await transporter.sendMail({
-        from: '"ShowBizy" <admin@showbizy.ai>',
+        from: '"ShowBizy" <hello@bilabs.ai>',
         to: user.email,
         subject: `Application Sent — ${job_title} at ${company}`,
         html: `

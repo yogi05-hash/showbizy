@@ -6,13 +6,13 @@ export const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: (process.env.ZOHO_EMAIL || 'admin@showbizy.ai').trim(),
+    user: (process.env.ZOHO_EMAIL || 'hello@bilabs.ai').trim(),
     pass: (process.env.ZOHO_APP_PASSWORD || '').trim(),
   },
 })
 
 const BASE_URL = 'https://showbizy.ai'
-const FROM = '"ShowBizy" <admin@showbizy.ai>'
+const FROM = '"ShowBizy" <hello@bilabs.ai>'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface EmailUser {

@@ -375,7 +375,7 @@ async function matchAndNotifyUsers(projects: { city: string; project: string; id
         const scoreLabel = bestScore >= 75 ? 'Strong match' : bestScore >= 50 ? 'Good match' : 'Possible match'
         try {
           await transporter.sendMail({
-            from: '"ShowBizy" <admin@showbizy.ai>',
+            from: '"ShowBizy" <hello@bilabs.ai>',
             to: user.email,
             subject: `${scoreLabel}: ${bestRole} on "${bestProject.title}" (${bestScore}%)`,
             headers: { 'X-Priority': '1', 'Importance': 'High' },
@@ -403,7 +403,7 @@ ${genuineMatches.length > 1 ? `<p style="color:#666;">Plus ${genuineMatches.leng
         try {
           const top = projectsWithRoles.slice(0, 3)
           await transporter.sendMail({
-            from: '"ShowBizy" <admin@showbizy.ai>',
+            from: '"ShowBizy" <hello@bilabs.ai>',
             to: user.email,
             subject: `${top.length} new project${top.length > 1 ? 's' : ''} just dropped`,
             headers: { 'X-Priority': '1', 'Importance': 'High' },
@@ -460,7 +460,7 @@ ${genuineMatches.length > 1 ? `<p style="color:#666;">Plus ${genuineMatches.leng
         // Fallback: generic email
         try {
           await transporter.sendMail({
-            from: '"ShowBizy" <admin@showbizy.ai>',
+            from: '"ShowBizy" <hello@bilabs.ai>',
             to: user.email,
             subject: broadMatch.length > 0
               ? `${broadMatch.length} project${broadMatch.length > 1 ? 's' : ''} in your area need${broadMatch.length === 1 ? 's' : ''} someone like you`
