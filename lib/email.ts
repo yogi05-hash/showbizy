@@ -2,17 +2,17 @@ import nodemailer from 'nodemailer'
 
 // ─── Shared Transporter ────────────────────────────────────────────────────
 export const transporter = nodemailer.createTransport({
-  host: 'smtppro.zoho.in',
+  host: (process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.eu').trim(),
   port: 465,
   secure: true,
   auth: {
-    user: (process.env.ZOHO_EMAIL || 'hello@bilabs.ai').trim(),
+    user: (process.env.ZOHO_EMAIL || 'admin@showbizy.ai').trim(),
     pass: (process.env.ZOHO_APP_PASSWORD || '').trim(),
   },
 })
 
 const BASE_URL = 'https://showbizy.ai'
-const FROM = '"ShowBizy" <hello@bilabs.ai>'
+const FROM = '"ShowBizy AI" <admin@showbizy.ai>'
 const FOOTER_TEXT = '\n— ShowBizy\nhttps://showbizy.ai'
 const FOOTER_HTML = '<p style="color:#999;font-size:12px;margin-top:24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#999;">showbizy.ai</a></p>'
 

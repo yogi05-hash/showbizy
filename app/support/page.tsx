@@ -18,11 +18,11 @@ const FAQS = [
   },
   {
     q: 'How do I cancel my Pro subscription?',
-    a: 'You can cancel anytime from your Stripe customer portal. Email hello@bilabs.ai and we\'ll send you the link, or you can manage your subscription directly through the email receipt Stripe sent you when you signed up.',
+    a: 'You can cancel anytime from your Stripe customer portal. Email admin@showbizy.ai and we\'ll send you the link, or you can manage your subscription directly through the email receipt Stripe sent you when you signed up.',
   },
   {
     q: 'I forgot my password',
-    a: 'Currently password reset is via email — contact hello@bilabs.ai with your registered email address and we\'ll help you reset it manually. We\'re building an automated reset flow soon.',
+    a: 'Currently password reset is via email — contact admin@showbizy.ai with your registered email address and we\'ll help you reset it manually. We\'re building an automated reset flow soon.',
   },
   {
     q: 'How do I update my profile?',
@@ -42,7 +42,7 @@ const FAQS = [
   },
   {
     q: 'How do I delete my account?',
-    a: 'Email hello@bilabs.ai with the subject "Delete my account" from your registered email address. We\'ll permanently delete your account and all associated data within 7 days, in compliance with GDPR.',
+    a: 'Email admin@showbizy.ai with the subject "Delete my account" from your registered email address. We\'ll permanently delete your account and all associated data within 7 days, in compliance with GDPR.',
   },
 ]
 
@@ -94,13 +94,13 @@ export default function SupportPage() {
         {/* Quick contact cards */}
         <div className="grid md:grid-cols-2 gap-4 mb-12">
           <a
-            href="mailto:hello@bilabs.ai"
+            href="mailto:admin@showbizy.ai"
             className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-amber-500/30 transition group"
           >
             <span className="text-3xl block mb-3">📧</span>
             <h3 className="font-bold mb-1">Email Support</h3>
             <p className="text-sm text-white/50 mb-3">Get a response within 24 hours</p>
-            <span className="text-amber-400 text-sm font-medium group-hover:text-amber-300">hello@bilabs.ai →</span>
+            <span className="text-amber-400 text-sm font-medium group-hover:text-amber-300">admin@showbizy.ai →</span>
           </a>
           <Link
             href="/pricing"
@@ -154,7 +154,7 @@ export default function SupportPage() {
             Our team responds within 24 hours, usually much sooner.
           </p>
           <a
-            href="mailto:hello@bilabs.ai"
+            href="mailto:admin@showbizy.ai"
             className="inline-block bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3 rounded-xl font-bold text-black hover:opacity-90 transition"
           >
             Email Support →

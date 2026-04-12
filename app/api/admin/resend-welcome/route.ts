@@ -48,8 +48,8 @@ export async function POST() {
       // Send admin notification
       try {
         await transporter.sendMail({
-          from: '"ShowBizy" <hello@bilabs.ai>',
-          to: 'yogibot05@gmail.com, hello@bilabs.ai',
+          from: '"ShowBizy AI" <admin@showbizy.ai>',
+          to: 'yogibot05@gmail.com, admin@showbizy.ai',
           replyTo: user.email,
           subject: `New signup: ${user.name} — ${user.city || 'Unknown'}`,
           headers: { 'X-Priority': '1', 'Importance': 'High' },

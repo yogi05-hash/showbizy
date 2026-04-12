@@ -68,7 +68,7 @@ export default function PrivacyPage() {
               <li><strong>Supabase</strong> (PostgreSQL database, hosted in EU) — stores your account and application data</li>
               <li><strong>Stripe</strong> (payment processing, PCI-DSS Level 1) — handles subscription payments</li>
               <li><strong>Vercel</strong> (hosting) — serves the website</li>
-              <li><strong>Zoho Mail</strong> (transactional email) — sends emails from hello@bilabs.ai</li>
+              <li><strong>Zoho Mail</strong> (transactional email) — sends emails from admin@showbizy.ai</li>
               <li><strong>Adzuna</strong> (job aggregation) — provides industry job listings</li>
               <li><strong>DeepSeek</strong> (AI processing) — generates project briefs and matches</li>
             </ul>
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
               <li><strong>Withdraw consent</strong> at any time</li>
             </ul>
             <p className="text-white/70 leading-relaxed mt-3">
-              To exercise any of these rights, email <a href="mailto:hello@bilabs.ai" className="text-amber-400 hover:text-amber-300">hello@bilabs.ai</a>. We respond within 7 days.
+              To exercise any of these rights, email <a href="mailto:admin@showbizy.ai" className="text-amber-400 hover:text-amber-300">admin@showbizy.ai</a>. We respond within 7 days.
             </p>
           </section>
 
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold mb-3 text-amber-400">9. Children</h2>
             <p className="text-white/70 leading-relaxed">
-              ShowBizy is not intended for users under 16. We do not knowingly collect data from children. If you believe a child has registered, contact us immediately at hello@bilabs.ai.
+              ShowBizy is not intended for users under 16. We do not knowingly collect data from children. If you believe a child has registered, contact us immediately at admin@showbizy.ai.
             </p>
           </section>
 
@@ -136,7 +136,7 @@ export default function PrivacyPage() {
               <p className="text-white/60 text-sm">Camden, London WC2H 9JQ</p>
               <p className="text-white/60 text-sm">United Kingdom</p>
               <p className="text-white/60 text-sm mt-2">
-                Email: <a href="mailto:hello@bilabs.ai" className="text-amber-400 hover:text-amber-300">hello@bilabs.ai</a>
+                Email: <a href="mailto:admin@showbizy.ai" className="text-amber-400 hover:text-amber-300">admin@showbizy.ai</a>
               </p>
             </div>
           </section>

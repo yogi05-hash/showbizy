@@ -71,7 +71,7 @@ export async function PATCH(req: Request) {
     try {
       if (action === 'approve') {
         await transporter.sendMail({
-          from: '"ShowBizy" <hello@bilabs.ai>',
+          from: '"ShowBizy AI" <admin@showbizy.ai>',
           to: user.email,
           subject: `🎉 Your Studio "${user.company_name}" is verified!`,
           html: `
@@ -93,7 +93,7 @@ export async function PATCH(req: Request) {
         })
       } else {
         await transporter.sendMail({
-          from: '"ShowBizy" <hello@bilabs.ai>',
+          from: '"ShowBizy AI" <admin@showbizy.ai>',
           to: user.email,
           subject: `Your ShowBizy Studio application`,
           html: `

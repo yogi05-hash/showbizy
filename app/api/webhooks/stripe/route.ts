@@ -87,8 +87,8 @@ export async function POST(req: NextRequest) {
                   // Notify admin of paid upgrade
                   try {
                     await transporter.sendMail({
-                      from: '"ShowBizy" <hello@bilabs.ai>',
-                      to: 'yogibot05@gmail.com, hello@bilabs.ai, hello@bilabs.ai',
+                      from: '"ShowBizy AI" <admin@showbizy.ai>',
+                      to: 'yogibot05@gmail.com, admin@showbizy.ai',
                       subject: `Paid upgrade: ${userData.name} — ${plan === 'studio' ? 'Studio' : 'Pro'} (${amountPaid})`,
                       headers: {
                         'X-Priority': '1',
@@ -161,8 +161,8 @@ Amount: ${amountPaid}
             if (cancelledUser) {
               try {
                 await transporter.sendMail({
-                  from: '"ShowBizy" <hello@bilabs.ai>',
-                  to: 'yogibot05@gmail.com, hello@bilabs.ai, hello@bilabs.ai',
+                  from: '"ShowBizy AI" <admin@showbizy.ai>',
+                  to: 'yogibot05@gmail.com, admin@showbizy.ai',
                   subject: `Subscription cancelled: ${cancelledUser.name} — ${cancelledUser.plan || 'Pro'}`,
                   headers: { 'X-Priority': '1', 'X-MSMail-Priority': 'High', 'Importance': 'High' },
                   text: `Subscription cancelled on ShowBizy\n\nName: ${cancelledUser.name}\nEmail: ${cancelledUser.email}\nPrevious plan: ${cancelledUser.plan || 'Pro'}\n\nTime: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })} (London time)`,
