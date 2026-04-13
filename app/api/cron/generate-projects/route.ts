@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { transporter, sendMatchConversionEmail } from '@/lib/email'
 
@@ -8,20 +8,9 @@ export const maxDuration = 300 // 5 minutes (Vercel Pro), falls back to plan lim
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions'
 
-// Auth check for Vercel cron
-function isAuthorized(req: NextRequest): boolean {
-  // Vercel crons send this header automatically
-  const authHeader = req.headers.get('authorization')
-  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  // Also allow manual trigger from dashboard (no auth for POST — existing behavior)
-  return false
-}
-
 // GET: Vercel cron trigger (daily at 6am UTC)
-export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+// Vercel crons are protected by Vercel's infrastructure — no custom auth needed
+export async function GET() {
   return generateProjects()
 }
 

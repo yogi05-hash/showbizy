@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
   sendDripDay1,
@@ -11,11 +11,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 // GET: Vercel cron trigger (runs daily at 8am UTC)
-export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function GET() {
   return runDripSequence()
 }
 
