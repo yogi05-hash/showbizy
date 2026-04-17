@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -27,13 +27,16 @@ const TITLES_BY_STREAM: Record<string, string[]> = {
   'Events & Live': ['Event Producer', 'Festival Director', 'Live Sound Engineer', 'Lighting Designer', 'Stage Designer', 'Tour Manager'],
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
     if (!DEEPSEEK_API_KEY) {
       return NextResponse.json({ error: 'DeepSeek not configured' }, { status: 503 })
     }
 
-    const cities = Object.keys(COMPANIES)
+    const body = await req.json().catch(() => ({}))
+    const targetCity = body.city || null
+    const allCities = Object.keys(COMPANIES)
+    const cities = targetCity ? allCities.filter(c => c.toLowerCase().includes(targetCity.toLowerCase())) : allCities.slice(0, 1)
     const streams = Object.keys(TITLES_BY_STREAM)
     let totalSaved = 0
 
