@@ -52,6 +52,7 @@ function DashboardPage() {
   const [matchedProjects, setMatchedProjects] = useState<any[]>([])
   const [activeProjects, setActiveProjects] = useState<{ id: string; title: string; stream: string; role: string; location: string; status: string }[]>([])
   const [matchesLoading, setMatchesLoading] = useState(false)
+  const [professionals, setProfessionals] = useState<{ id: string; name: string; title: string; company: string; city: string; photo_url?: string }[]>([])
   const loc = detectLocation()
   const proPrice = formatPrice(PRICING[loc.currency.code].pro, loc.currency.code)
 
@@ -138,6 +139,20 @@ function DashboardPage() {
       } catch {}
     }
     fetchActiveProjects()
+
+    // Fetch professionals in user's area
+    const city = user.city || ''
+    if (city) {
+      fetch(`/api/professionals?city=${encodeURIComponent(city)}&limit=6`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.professionals) setProfessionals(d.professionals) })
+        .catch(() => {})
+    } else {
+      fetch('/api/professionals?limit=6')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.professionals) setProfessionals(d.professionals) })
+        .catch(() => {})
+    }
   }, [user])
 
   if (loading || !user) {
@@ -321,6 +336,39 @@ function DashboardPage() {
                 </div>
               )}
             </section>
+
+            {/* Professionals in your area */}
+            {professionals.length > 0 && (
+              <section>
+                <h2 className="text-xl font-bold mb-4">Professionals in {user.city || 'your area'}</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {professionals.map(pro => (
+                    <div key={pro.id} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                          {pro.photo_url ? (
+                            <img src={pro.photo_url} alt={pro.name} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            pro.name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{pro.name}</p>
+                          <p className="text-white/30 text-[11px] truncate">{pro.title}</p>
+                        </div>
+                      </div>
+                      {pro.company && <p className="text-white/20 text-[10px] truncate">{pro.company}</p>}
+                      {!user.is_pro && (
+                        <p className="text-amber-400/60 text-[10px] mt-2">Pro to connect</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {!user.is_pro && (
+                  <p className="text-white/20 text-xs mt-3">Upgrade to Pro to connect with professionals in your area.</p>
+                )}
+              </section>
+            )}
 
             {/* Job Applications */}
             <JobApplicationsSection userId={user.id} />

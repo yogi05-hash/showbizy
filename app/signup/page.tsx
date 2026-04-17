@@ -28,11 +28,18 @@ export default function SignupPage() {
     portfolio: '',
   })
 
-  // Auto-detect city from timezone
+  // Auto-detect city from timezone OR pre-fill from invite link
   useEffect(() => {
-    const loc = detectLocation()
-    if (loc.city && !formData.city) {
-      setFormData(prev => ({ ...prev, city: loc.city }))
+    // Check for invite link params
+    const params = new URLSearchParams(window.location.search)
+    const inviteCity = params.get('city')
+    if (inviteCity) {
+      setFormData(prev => ({ ...prev, city: inviteCity }))
+    } else {
+      const loc = detectLocation()
+      if (loc.city && !formData.city) {
+        setFormData(prev => ({ ...prev, city: loc.city }))
+      }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
