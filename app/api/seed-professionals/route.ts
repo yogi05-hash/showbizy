@@ -43,11 +43,11 @@ export async function POST(req: NextRequest) {
           },
           {
             role: 'user',
-            content: `Generate 20 entertainment professionals based in ${city}. Mix across Film, Music, Fashion, Content Creation, Performing Arts, Visual Arts, Events. Use these real companies: ${companies.join(', ')}. Names should be culturally appropriate for ${city}. Mix genders. Each person should have a unique realistic title and a one-line headline about their work.`
+            content: `Generate 12 entertainment professionals based in ${city}. Mix across Film, Music, Fashion, Content Creation, Performing Arts, Visual Arts, Events. Use these real companies: ${companies.join(', ')}. Names should be culturally appropriate for ${city}. Mix genders. Each person should have a unique realistic title and a one-line headline about their work.`
           }
         ],
         temperature: 0.9,
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     })
 
