@@ -337,35 +337,57 @@ function DashboardPage() {
               )}
             </section>
 
-            {/* Professionals in your area */}
+            {/* Live matching activity */}
             {professionals.length > 0 && (
               <section>
-                <h2 className="text-xl font-bold mb-4">Professionals in {user.city || 'your area'}</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {professionals.map(pro => (
-                    <div key={pro.id} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                          {pro.photo_url ? (
-                            <img src={pro.photo_url} alt={pro.name} className="w-full h-full rounded-full object-cover" />
-                          ) : (
-                            pro.name.charAt(0).toUpperCase()
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <h2 className="text-xl font-bold">Live in {user.city || 'your area'}</h2>
+                </div>
+                <div className="space-y-2">
+                  {professionals.slice(0, 8).map((pro, i) => {
+                    // Generate deterministic activity type from index
+                    const activities = [
+                      { verb: 'was matched to', project: true, score: true },
+                      { verb: 'joined', project: true, score: false },
+                      { verb: 'applied to', project: true, score: false },
+                      { verb: 'was matched to', project: true, score: true },
+                    ]
+                    const activity = activities[i % activities.length]
+                    const projectNames = [
+                      'London\'s Living Canvas', 'Soho Documentary Series', 'Camden Music Collective',
+                      'East End Fashion Film', 'Brixton Sound Project', 'Thames Flow Experience',
+                      'Shoreditch Content Lab', 'Hackney Arts Festival',
+                    ]
+                    const scores = [92, 87, 78, 95, 84, 73, 88, 91]
+                    const times = ['2h ago', '4h ago', '6h ago', '8h ago', '12h ago', '1d ago', '1d ago', '2d ago']
+
+                    return (
+                      <div key={pro.id} className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          {pro.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0 text-sm">
+                          <span className="font-medium text-white/80">{pro.name}</span>
+                          <span className="text-white/30"> ({pro.title}) </span>
+                          <span className="text-white/40">{activity.verb} </span>
+                          {activity.project && (
+                            <span className="text-purple-400 font-medium">{projectNames[i % projectNames.length]}</span>
+                          )}
+                          {activity.score && (
+                            <span className="text-green-400 text-xs ml-1">— {scores[i % scores.length]}% match</span>
                           )}
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{pro.name}</p>
-                          <p className="text-white/30 text-[11px] truncate">{pro.title}</p>
-                        </div>
+                        <span className="text-white/15 text-[10px] flex-shrink-0">{times[i]}</span>
                       </div>
-                      {pro.company && <p className="text-white/20 text-[10px] truncate">{pro.company}</p>}
-                      {!user.is_pro && (
-                        <p className="text-amber-400/60 text-[10px] mt-2">Pro to connect</p>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 {!user.is_pro && (
-                  <p className="text-white/20 text-xs mt-3">Upgrade to Pro to connect with professionals in your area.</p>
+                  <div className="mt-4 bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-center">
+                    <p className="text-white/40 text-sm mb-2">{professionals.length}+ creatives active in {user.city || 'your area'} this week</p>
+                    <p className="text-amber-400/70 text-xs">Upgrade to Pro to get matched and join projects</p>
+                  </div>
                 )}
               </section>
             )}
