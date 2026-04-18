@@ -53,6 +53,7 @@ function DashboardPage() {
   const [activeProjects, setActiveProjects] = useState<{ id: string; title: string; stream: string; role: string; location: string; status: string }[]>([])
   const [matchesLoading, setMatchesLoading] = useState(false)
   const [professionals, setProfessionals] = useState<{ id: string; name: string; title: string; company: string; city: string; photo_url?: string }[]>([])
+  const [matchedActivity, setMatchedActivity] = useState<{ professional: { name: string; title: string; company: string; photo_url: string | null }; project: { id: string; title: string }; action: string; score: number; timeAgo: string }[]>([])
   const loc = detectLocation()
   const proPrice = formatPrice(PRICING[loc.currency.code].pro, loc.currency.code)
 
@@ -140,19 +141,19 @@ function DashboardPage() {
     }
     fetchActiveProjects()
 
-    // Fetch professionals in user's area
+    // Fetch matched activity (real professionals matched to real projects)
     const city = user.city || ''
-    if (city) {
-      fetch(`/api/professionals?city=${encodeURIComponent(city)}&limit=6`)
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.professionals) setProfessionals(d.professionals) })
-        .catch(() => {})
-    } else {
-      fetch('/api/professionals?limit=6')
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.professionals) setProfessionals(d.professionals) })
-        .catch(() => {})
-    }
+    const cityParam = city ? `&city=${encodeURIComponent(city)}` : ''
+    fetch(`/api/professionals/matched?limit=10${cityParam}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.matches) setMatchedActivity(d.matches) })
+      .catch(() => {})
+
+    // Also fetch professionals for count
+    fetch(`/api/professionals?limit=6${city ? `&city=${encodeURIComponent(city)}` : ''}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.professionals) setProfessionals(d.professionals) })
+      .catch(() => {})
   }, [user])
 
   if (loading || !user) {
@@ -337,57 +338,50 @@ function DashboardPage() {
               )}
             </section>
 
-            {/* Live matching activity */}
-            {professionals.length > 0 && (
+            {/* Live matching activity — real professionals matched to real projects */}
+            {matchedActivity.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   <h2 className="text-xl font-bold">Live in {user.city || 'your area'}</h2>
                 </div>
                 <div className="space-y-2">
-                  {professionals.slice(0, 8).map((pro, i) => {
-                    // Generate deterministic activity type from index
-                    const activities = [
-                      { verb: 'was matched to', project: true, score: true },
-                      { verb: 'joined', project: true, score: false },
-                      { verb: 'applied to', project: true, score: false },
-                      { verb: 'was matched to', project: true, score: true },
-                    ]
-                    const activity = activities[i % activities.length]
-                    const projectNames = [
-                      'London\'s Living Canvas', 'Soho Documentary Series', 'Camden Music Collective',
-                      'East End Fashion Film', 'Brixton Sound Project', 'Thames Flow Experience',
-                      'Shoreditch Content Lab', 'Hackney Arts Festival',
-                    ]
-                    const scores = [92, 87, 78, 95, 84, 73, 88, 91]
-                    const times = ['2h ago', '4h ago', '6h ago', '8h ago', '12h ago', '1d ago', '1d ago', '2d ago']
-
-                    return (
-                      <div key={pro.id} className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          {pro.name.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0 text-sm">
-                          <span className="font-medium text-white/80">{pro.name}</span>
-                          <span className="text-white/30"> ({pro.title}) </span>
-                          <span className="text-white/40">{activity.verb} </span>
-                          {activity.project && (
-                            <span className="text-purple-400 font-medium">{projectNames[i % projectNames.length]}</span>
-                          )}
-                          {activity.score && (
-                            <span className="text-green-400 text-xs ml-1">— {scores[i % scores.length]}% match</span>
-                          )}
-                        </div>
-                        <span className="text-white/15 text-[10px] flex-shrink-0">{times[i]}</span>
+                  {matchedActivity.map((match, i) => (
+                    <Link key={i} href={`/projects/${match.project.id}`} className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 hover:border-white/10 transition">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
+                        {match.professional.photo_url ? (
+                          <img src={match.professional.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          match.professional.name.charAt(0)
+                        )}
                       </div>
-                    )
-                  })}
+                      <div className="flex-1 min-w-0 text-sm">
+                        <span className="font-medium text-white/80">{match.professional.name}</span>
+                        <span className="text-white/30"> ({match.professional.title}{match.professional.company ? `, ${match.professional.company}` : ''}) </span>
+                        <span className="text-white/40">{match.action} </span>
+                        <span className="text-purple-400 font-medium">{match.project.title}</span>
+                        {match.score >= 70 && (
+                          <span className={`text-xs ml-1 ${match.score >= 85 ? 'text-green-400' : 'text-amber-400'}`}>— {match.score}% match</span>
+                        )}
+                      </div>
+                      <span className="text-white/15 text-[10px] flex-shrink-0">{match.timeAgo}</span>
+                    </Link>
+                  ))}
                 </div>
                 {!user.is_pro && (
-                  <div className="mt-4 bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-center">
-                    <p className="text-white/40 text-sm mb-2">{professionals.length}+ creatives active in {user.city || 'your area'} this week</p>
-                    <p className="text-amber-400/70 text-xs">Upgrade to Pro to get matched and join projects</p>
-                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email, userId: user.id, plan: 'pro' }) })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                      } catch { window.location.href = '/upgrade' }
+                    }}
+                    className="w-full mt-4 bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-center hover:border-amber-500/30 transition"
+                  >
+                    <p className="text-white/40 text-sm mb-1">{professionals.length}+ creatives active in {user.city || 'your area'} this week</p>
+                    <p className="text-amber-400 text-xs font-medium">Upgrade to Pro to get matched and join projects →</p>
+                  </button>
                 )}
               </section>
             )}
