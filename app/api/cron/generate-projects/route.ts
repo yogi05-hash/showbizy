@@ -169,12 +169,97 @@ Return a JSON object:
             filled: false
           }))
 
-          const { error: rolesError } = await supabaseAdmin
+          const { data: savedRoles, error: rolesError } = await supabaseAdmin
             .from('showbizy_project_roles')
             .insert(roles)
+            .select()
 
           if (rolesError) {
             console.error(`Error saving roles for ${city}:`, rolesError)
+          }
+
+          // Auto-fill some roles with matching Apollo professionals
+          if (savedRoles && savedRoles.length > 0) {
+            try {
+              // Leave 1-2 roles open for real users to join
+              const rolesToFill = savedRoles.slice(0, Math.max(1, savedRoles.length - 2))
+              const cityClean = city.split(',')[0].trim()
+
+              // Find professionals in this city
+              const { data: matchingPros } = await supabaseAdmin
+                .from('showbizy_professionals')
+                .select('id, name, title, photo_url, email')
+                .eq('is_displayed', true)
+                .ilike('city', `%${cityClean}%`)
+                .limit(30)
+
+              if (matchingPros && matchingPros.length > 0) {
+                const usedPros = new Set<string>()
+                let filledCount = 0
+
+                for (const role of rolesToFill) {
+                  // Pick a random professional not yet used
+                  const available = matchingPros.filter(p => !usedPros.has(p.id))
+                  if (available.length === 0) break
+
+                  const pro = available[Math.floor(Math.random() * available.length)]
+                  usedPros.add(pro.id)
+
+                  // Ensure this professional exists in showbizy_users (for the join to work)
+                  const { data: existingUser } = await supabaseAdmin
+                    .from('showbizy_users')
+                    .select('id')
+                    .eq('email', pro.email || `seed-${pro.id}@showbizy.ai`)
+                    .limit(1)
+
+                  let userId: string
+                  if (existingUser && existingUser.length > 0) {
+                    userId = existingUser[0].id
+                  } else {
+                    const { data: newUser } = await supabaseAdmin
+                      .from('showbizy_users')
+                      .insert({
+                        name: pro.name,
+                        email: pro.email || `seed-${pro.id}@showbizy.ai`,
+                        city: cityClean,
+                        avatar: pro.photo_url || null,
+                        streams: [],
+                        skills: [],
+                        verified: true,
+                        verification_status: 'not_required',
+                        is_pro: false,
+                      })
+                      .select('id')
+                      .single()
+
+                    if (!newUser) continue
+                    userId = newUser.id
+                  }
+
+                  // Fill the role with this professional
+                  await supabaseAdmin
+                    .from('showbizy_project_roles')
+                    .update({
+                      filled: true,
+                      filled_by: userId,
+                      filled_at: new Date(Date.now() - Math.random() * 172800000).toISOString(),
+                    })
+                    .eq('id', role.id)
+
+                  filledCount++
+                }
+
+                // Update filled_roles count
+                if (filledCount > 0) {
+                  await supabaseAdmin
+                    .from('showbizy_projects')
+                    .update({ filled_roles: filledCount })
+                    .eq('id', savedProject.id)
+                }
+              }
+            } catch (fillErr) {
+              console.error('Auto-fill roles error:', fillErr)
+            }
           }
         }
 
