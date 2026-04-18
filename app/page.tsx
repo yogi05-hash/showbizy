@@ -201,6 +201,8 @@ export default function Home() {
   const [featuredJobs, setFeaturedJobs] = useState<{id:string;title:string;company:string;location:string;salary:string;category:string;type:string;posted:string}[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [liveProjects, setLiveProjects] = useState<{id:string;title:string;stream:string;streamIcon:string;genre:string;location:string;timeline:string;description:string;teamSize:number;filledRoles:number;status:string;roles:{role:string;filled:boolean}[]}[]>([])
+  const [matchedActivity, setMatchedActivity] = useState<{professional:{name:string;title:string;company:string;photo_url:string|null};project:{id:string;title:string};action:string;score:number;timeAgo:string}[]>([])
+  const [proCompanies, setProCompanies] = useState<string[]>([])
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
@@ -238,6 +240,19 @@ export default function Home() {
             return bLocal - aLocal
           })
           setLiveProjects(sorted.slice(0, 3))
+        }
+      })
+      .catch(() => {})
+
+    // Fetch real matched activity for social proof
+    fetch('/api/professionals/matched?limit=8')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.matches) {
+          setMatchedActivity(d.matches)
+          // Extract unique company names for logo bar
+          const companies = [...new Set(d.matches.map((m: {professional:{company:string}}) => m.professional.company).filter(Boolean))] as string[]
+          setProCompanies(companies)
         }
       })
       .catch(() => {})
@@ -507,6 +522,48 @@ export default function Home() {
         {/* Bottom gradient fade */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent pointer-events-none" />
       </section>
+
+      {/* ─── COMPANY BAR — social proof ─── */}
+      {proCompanies.length > 0 && (
+        <div className="border-t border-white/5 py-8 px-6">
+          <p className="text-center text-white/20 text-xs uppercase tracking-widest mb-5">Creatives from</p>
+          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 max-w-4xl mx-auto">
+            {proCompanies.slice(0, 10).map(company => (
+              <span key={company} className="text-white/25 text-sm font-medium">{company}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── LIVE ACTIVITY — real matching happening ─── */}
+      {matchedActivity.length > 0 && (
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          <div className="flex items-center gap-2 mb-5">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-sm font-semibold text-white/40">Live matching</span>
+          </div>
+          <div className="grid md:grid-cols-2 gap-2">
+            {matchedActivity.slice(0, 6).map((match, i) => (
+              <Link key={i} href={`/projects/${match.project.id}`} className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 hover:border-white/10 transition">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
+                  {match.professional.photo_url ? (
+                    <img src={match.professional.photo_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    match.professional.name.charAt(0)
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-xs">
+                  <span className="font-medium text-white/70">{match.professional.name}</span>
+                  <span className="text-white/25"> {match.action} </span>
+                  <span className="text-amber-400/80">{match.project.title}</span>
+                  {match.score >= 75 && <span className="text-green-400 ml-1">— {match.score}%</span>}
+                </div>
+                <span className="text-white/10 text-[10px] flex-shrink-0">{match.timeAgo}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ─── ACTIVITY TICKER ─── */}
       <div className="relative border-t border-b border-white/5 bg-white/[0.02] overflow-hidden py-3" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
