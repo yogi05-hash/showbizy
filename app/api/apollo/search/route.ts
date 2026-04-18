@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
     let saved = 0
     let skipped = 0
 
+    const errors: string[] = []
+
     for (const person of people.slice(0, Math.min(perPage, 25))) {
       try {
         // Enrich to get full data
@@ -84,11 +86,20 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ id: person.id, reveal_personal_emails: false }),
         })
 
-        if (!matchRes.ok) { skipped++; continue }
+        if (!matchRes.ok) {
+          errors.push(`match ${person.id}: HTTP ${matchRes.status}`)
+          skipped++
+          continue
+        }
 
         const matchData = await matchRes.json()
         const p = matchData.person
-        if (!p || !p.name) { skipped++; continue }
+
+        if (!p || !p.name) {
+          errors.push(`match ${person.id}: no person/name in response`)
+          skipped++
+          continue
+        }
 
         const title = p.title || ''
         const company = p.organization?.name || p.employment_history?.[0]?.organization_name || ''
@@ -123,12 +134,12 @@ export async function POST(req: NextRequest) {
           })
 
         if (!error) saved++
-        else { console.error('Insert error:', error); skipped++ }
-      } catch {
+        else { errors.push(`insert ${p.name}: ${error.message}`); skipped++ }
+      } catch (err) {
+        errors.push(`catch: ${err}`)
         skipped++
       }
 
-      // Rate limit
       await new Promise(r => setTimeout(r, 300))
     }
 
@@ -138,6 +149,7 @@ export async function POST(req: NextRequest) {
       saved,
       skipped,
       totalInApollo: searchData.total_entries,
+      errors: errors.length > 0 ? errors : undefined,
     })
   } catch (error) {
     console.error('Apollo search error:', error)
