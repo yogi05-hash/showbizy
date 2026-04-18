@@ -94,9 +94,18 @@ export async function POST(req: NextRequest) {
         const company = p.organization?.name || p.employment_history?.[0]?.organization_name || ''
         const city = p.city || locations[0]?.split(',')[0] || ''
 
+        // Check if already exists
+        const { data: existing } = await supabaseAdmin
+          .from('showbizy_professionals')
+          .select('id')
+          .eq('apollo_id', p.id)
+          .limit(1)
+
+        if (existing && existing.length > 0) { skipped++; continue }
+
         const { error } = await supabaseAdmin
           .from('showbizy_professionals')
-          .upsert({
+          .insert({
             apollo_id: p.id,
             name: p.name,
             email: p.email || null,
@@ -111,10 +120,10 @@ export async function POST(req: NextRequest) {
             headline: p.headline || `${title} at ${company}`,
             source: 'apollo',
             is_displayed: true,
-          }, { onConflict: 'apollo_id' })
+          })
 
         if (!error) saved++
-        else skipped++
+        else { console.error('Insert error:', error); skipped++ }
       } catch {
         skipped++
       }
