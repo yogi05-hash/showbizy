@@ -518,42 +518,51 @@ ${genuineMatches.length > 1 ? `<p style="color:#666;">Plus ${genuineMatches.leng
         } catch { /* ignore duplicates */ }
       }
 
-      // Pick projects to show: broad matches or all new projects
+      // Pick projects to show
       const projectsToShow = broadMatch.length > 0 ? broadMatch.slice(0, 3) : projectsWithRoles.slice(0, 3)
-      const matchText = broadMatch.length > 0
-        ? `Our AI found ${broadMatch.length} project${broadMatch.length > 1 ? 's' : ''} in your area that need someone like you`
-        : 'New creative projects just dropped on ShowBizy'
+
+      // Find real professionals on these projects for name-dropping
+      let proNames: string[] = []
+      try {
+        const { data: pros } = await supabaseAdmin
+          .from('showbizy_professionals')
+          .select('name, title, company')
+          .eq('is_displayed', true)
+          .ilike('city', `%${userCity.split(',')[0].trim()}%`)
+          .limit(5)
+        if (pros?.length) {
+          proNames = pros.map(p => `${p.name} (${p.title}, ${p.company})`)
+        }
+      } catch {}
+
+      const proNameText = proNames.length > 0
+        ? `\n\nProfessionals already matched: ${proNames.slice(0, 3).join(', ')}`
+        : ''
+      const proNameHtml = proNames.length > 0
+        ? `<p style="margin-top:12px;padding:10px;background:#f8f8f8;border-radius:8px;font-size:13px;"><strong>Professionals already matched:</strong><br>${proNames.slice(0, 3).join('<br>')}</p>`
+        : ''
 
       try {
-        await sendMatchConversionEmail(
-          { name: user.name, email: user.email },
-          { id: projectsToShow[0].id, title: projectsToShow[0].title, stream: projectsToShow[0].stream, location: projectsToShow[0].location }
-        )
-        sent++
-      } catch {
-        // Fallback: generic email
-        try {
-          await transporter.sendMail({
-            from: '"ShowBizy AI" <admin@showbizy.ai>',
-            to: user.email,
-            subject: broadMatch.length > 0
-              ? `${broadMatch.length} project${broadMatch.length > 1 ? 's' : ''} in your area need${broadMatch.length === 1 ? 's' : ''} someone like you`
-              : `New creative projects just dropped`,
-            headers: { 'X-Priority': '1', 'Importance': 'High' },
-            text: `Hey ${user.name},\n\n${matchText}:\n\n${projectsToShow.map(p => `- ${p.title} (${p.stream}, ${p.location})`).join('\n')}\n\nUpgrade to Pro to see your match score and apply: https://showbizy.ai/upgrade\n\n— ShowBizy`,
-            html: `<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1a1a1a; line-height: 1.6; max-width: 560px;">
+        await transporter.sendMail({
+          from: '"ShowBizy AI" <admin@showbizy.ai>',
+          to: user.email,
+          subject: proNames.length > 0
+            ? `${user.name}, ${proNames[0].split(' (')[0]} and ${proNames.length - 1} others matched projects in your area`
+            : `${projectsToShow.length} projects in your area need your skills`,
+          text: `Hey ${user.name},\n\nNew projects in your area:\n\n${projectsToShow.map(p => `- ${p.title} (${p.stream}, ${p.location})`).join('\n')}${proNameText}\n\nUpgrade to Pro to connect and apply: https://showbizy.ai/upgrade\n\n— ShowBizy`,
+          html: `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;max-width:560px;">
 <p>Hey ${user.name},</p>
-<p>${matchText}:</p>
+<p>New projects in your area:</p>
 <ul style="padding-left:20px;">${projectsToShow.map(p => `<li style="margin-bottom:8px;"><strong>${p.title}</strong> — ${p.stream}, ${p.location}</li>`).join('')}</ul>
-<p style="margin-top:16px;padding:14px;background:#7c3aed;border-radius:8px;text-align:center;"><a href="https://showbizy.ai/upgrade" style="color:#fff;font-weight:bold;font-size:16px;text-decoration:none;">Upgrade to Pro — see your match score & apply</a></p>
-<p style="color:#666; font-size: 12px; margin-top: 24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#666;">showbizy.ai</a></p>
+${proNameHtml}
+<p><a href="https://showbizy.ai/upgrade">Upgrade to Pro to connect and apply</a></p>
+<p style="color:#999;font-size:12px;margin-top:24px;">— ShowBizy<br><a href="https://showbizy.ai" style="color:#999;">showbizy.ai</a></p>
 </div>`,
           })
           sent++
         } catch (emailErr) {
           console.error(`Failed to send free user email to ${user.email}:`, emailErr)
         }
-      }
     }
 
     // Rate limit

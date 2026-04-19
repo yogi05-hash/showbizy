@@ -54,6 +54,7 @@ function DashboardPage() {
   const [matchesLoading, setMatchesLoading] = useState(false)
   const [professionals, setProfessionals] = useState<{ id: string; name: string; title: string; company: string; city: string; photo_url?: string }[]>([])
   const [matchedActivity, setMatchedActivity] = useState<{ professional: { name: string; title: string; company: string; photo_url: string | null }; project: { id: string; title: string }; action: string; score: number; timeAgo: string }[]>([])
+  const [personalMatches, setPersonalMatches] = useState<{ name: string; title: string; company: string; photo_url: string | null; matchScore: number }[]>([])
   const loc = detectLocation()
   const proPrice = formatPrice(PRICING[loc.currency.code].pro, loc.currency.code)
 
@@ -147,6 +148,12 @@ function DashboardPage() {
     fetch(`/api/professionals/matched?limit=10${cityParam}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.matches) setMatchedActivity(d.matches) })
+      .catch(() => {})
+
+    // Fetch professionals matched to THIS user's skills
+    fetch(`/api/professionals/for-user?user_id=${user.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.professionals) setPersonalMatches(d.professionals) })
       .catch(() => {})
 
     // Also fetch professionals for count
@@ -337,6 +344,50 @@ function DashboardPage() {
                 </div>
               )}
             </section>
+
+            {/* Professionals matched to YOUR skills */}
+            {personalMatches.length > 0 && (
+              <section>
+                <h2 className="text-xl font-bold mb-1">Professionals who match your skills</h2>
+                <p className="text-white/30 text-sm mb-4">Based on your profile, these industry professionals are a match for you.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {personalMatches.slice(0, 4).map((pro, i) => (
+                    <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 text-center">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center text-lg font-bold mx-auto mb-3 overflow-hidden">
+                        {pro.photo_url ? (
+                          <img src={pro.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          pro.name.charAt(0)
+                        )}
+                      </div>
+                      <p className="font-medium text-sm truncate">{pro.name}</p>
+                      <p className="text-white/30 text-[11px] truncate">{pro.title}</p>
+                      <p className="text-white/20 text-[10px] truncate">{pro.company}</p>
+                      <div className={`text-[10px] mt-2 px-2 py-0.5 rounded-full inline-block ${
+                        pro.matchScore >= 40 ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'
+                      }`}>
+                        {pro.matchScore}% match
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {!user.is_pro && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email, userId: user.id, plan: 'pro' }) })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                      } catch { window.location.href = '/upgrade' }
+                    }}
+                    className="w-full mt-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/20 rounded-xl p-4 text-center hover:border-purple-500/40 transition"
+                  >
+                    <p className="text-white/50 text-sm mb-1">Upgrade to Pro to connect with {personalMatches.length} professionals</p>
+                    <p className="text-amber-400 text-xs font-medium">Unlock messaging, profiles, and collaboration →</p>
+                  </button>
+                )}
+              </section>
+            )}
 
             {/* Live matching activity — real professionals matched to real projects */}
             {matchedActivity.length > 0 && (
