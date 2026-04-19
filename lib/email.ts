@@ -465,6 +465,45 @@ Upgrade now: ${BASE_URL}/upgrade${FOOTER_TEXT}`
   await transporter.sendMail({ from: FROM, to: user.email, subject: `${totalMatches} projects closing soon in ${city}`, text, html })
 }
 
+// ─── 12. Trial ending reminder ────────────────────────────────────────────
+// Fires from the Stripe webhook `customer.subscription.trial_will_end`
+// (~3 days before trial end). Last nudge before the first charge.
+export async function sendTrialEndingEmail(
+  user: { name: string; email: string },
+  trialEndsAt: string
+): Promise<void> {
+  const endDate = new Date(trialEndsAt).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+
+  const text = `Hey ${user.name},
+
+Your ShowBizy Pro trial ends on ${endDate} — that's when your first £9 payment goes through.
+
+No action needed if you want to keep Pro. Our AI will continue matching you to projects, you'll keep applying to real industry jobs, and we'll keep the weekly digests coming.
+
+If you want to cancel before the charge, open the billing portal from your dashboard.
+
+Manage subscription: ${BASE_URL}/dashboard${FOOTER_TEXT}`
+
+  const html = plainHtml(`
+<p>Hey ${user.name},</p>
+<p>Your ShowBizy Pro trial ends on <strong>${endDate}</strong> — that's when your first £9 payment goes through.</p>
+<p><strong>No action needed</strong> if you want to keep Pro. Our AI will continue matching you to projects, you'll keep applying to real industry jobs, and we'll keep the weekly digests coming.</p>
+<p>If you want to cancel before the charge, open the billing portal from your dashboard.</p>
+<p><a href="${BASE_URL}/dashboard">Manage subscription</a></p>`)
+
+  await transporter.sendMail({
+    from: FROM,
+    to: user.email,
+    subject: `Your ShowBizy Pro trial ends ${endDate}`,
+    text,
+    html,
+  })
+}
+
 export async function sendMatchConversionEmail(user: { name: string; email: string }, project: DripProject): Promise<void> {
   const text = `Hey ${user.name},
 

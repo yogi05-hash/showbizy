@@ -12,7 +12,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { email, userId, plan = 'pro', currency = 'gbp' } = await req.json()
+    const body = await req.json()
+    const {
+      email,
+      userId,
+      plan = 'pro',
+      interval = 'monthly',
+      trial = false,
+      currency = 'gbp',
+    } = body as {
+      email?: string
+      userId?: string
+      plan?: 'pro' | 'studio'
+      interval?: 'monthly' | 'yearly'
+      trial?: boolean
+      currency?: string
+    }
 
     if (!email || !userId) {
       return NextResponse.json(
@@ -25,14 +40,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
-    // Pick the right Stripe price ID based on plan
-    const proPrice = (process.env.STRIPE_PRICE_ID || '').trim()
+    // Pick the right Stripe price ID. Pro has monthly + yearly. Studio stays monthly.
+    const proMonthly = (process.env.STRIPE_PRICE_ID || '').trim()
+    const proYearly = (process.env.STRIPE_PRICE_YEARLY || '').trim()
     const studioPrice = (process.env.STRIPE_STUDIO_PRICE_ID || '').trim()
-    const priceId = plan === 'studio' ? studioPrice : proPrice
+
+    let priceId: string
+    if (plan === 'studio') {
+      priceId = studioPrice
+    } else if (interval === 'yearly') {
+      priceId = proYearly || proMonthly // graceful fallback to monthly if yearly missing
+    } else {
+      priceId = proMonthly
+    }
 
     if (!priceId) {
       return NextResponse.json(
-        { error: `Price not configured for ${plan} plan` },
+        { error: `Price not configured for ${plan} ${interval}` },
         { status: 503 }
       )
     }
@@ -42,13 +66,15 @@ export async function POST(req: NextRequest) {
     const Stripe = (await import('stripe')).default
     const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-12-18.acacia' as import('stripe').Stripe.LatestApiVersion })
 
-    const session = await stripeClient.checkout.sessions.create({
+    const sessionConfig: import('stripe').Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       payment_method_types: ['card'],
       customer_email: email,
       metadata: {
         userId,
         plan,
+        interval,
+        trial: String(trial),
         detectedCurrency: currency,
       },
       line_items: [
@@ -59,7 +85,17 @@ export async function POST(req: NextRequest) {
       ],
       success_url: `${origin}/dashboard?upgraded=${plan}`,
       cancel_url: `${origin}/pricing`,
-    })
+    }
+
+    // Trial only applies to Pro (Studio has a verification gate that makes trials pointless).
+    if (trial && plan === 'pro') {
+      sessionConfig.subscription_data = {
+        trial_period_days: 7,
+        metadata: { userId, plan },
+      }
+    }
+
+    const session = await stripeClient.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ url: session.url })
   } catch (error: unknown) {
