@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { detectLocation, detectLocationByIP, formatPrice, PRICING, type LocationData } from '@/lib/location'
+import { detectLocation, detectLocationByIP, formatPrice, PRICING, PRICING_YEARLY_MONTHLY_EQUIV, type LocationData } from '@/lib/location'
 
 const FREE_FEATURES = [
   'Create your creative profile',
@@ -50,6 +50,7 @@ export default function PricingPage() {
   const [error, setError] = useState('')
   const [user, setUser] = useState<UserData | null>(null)
   const [stats, setStats] = useState({ users: 0, projects: 0, matches: 0 })
+  const [yearly, setYearly] = useState(false)
   const [location, setLocation] = useState<LocationData>({
     city: 'London',
     country: 'UK',
@@ -96,7 +97,9 @@ export default function PricingPage() {
   const isCompany = !!user?.company_name // Registered as Studio
   const isCreative = !!user && !user.company_name // Plain creative signup
   const showPro = !user || isCreative || isPro
-  const showStudio = !user || isCompany || isStudio
+  // Studio is hidden for logged-out visitors (kept accessible via /signup/studio).
+  // Logged-in Studio owners + plain creatives already on Studio still see the card.
+  const showStudio = isCompany || isStudio
   const visibleCount = 1 + (showPro ? 1 : 0) + (showStudio ? 1 : 0)
   const gridCols = visibleCount === 3 ? 'md:grid-cols-3' : visibleCount === 2 ? 'md:grid-cols-2 max-w-3xl' : 'md:grid-cols-1 max-w-md'
 
@@ -134,6 +137,9 @@ export default function PricingPage() {
 
       const user = JSON.parse(stored)
 
+      // Pro offers a 7-day free trial (card required, auto-charges day 8).
+      // Studio skips the trial because it has a verification gate already.
+      const isTrial = plan === 'pro' && !user.is_pro && user.plan !== 'pro' && user.plan !== 'pro_trial'
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,6 +147,8 @@ export default function PricingPage() {
           email: user.email,
           userId: user.id,
           plan,
+          interval: yearly ? 'yearly' : 'monthly',
+          trial: isTrial,
           currency: location.currency.code.toLowerCase(),
         }),
       })
@@ -225,6 +233,31 @@ export default function PricingPage() {
           </p>
         </div>
 
+        {/* Monthly / Yearly toggle (applies to Pro only). Studio stays monthly. */}
+        {showPro && !isPro && (
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/[0.05] border border-white/10">
+              <button
+                type="button"
+                onClick={() => setYearly(false)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${!yearly ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'text-white/60 hover:text-white'}`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setYearly(true)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2 ${yearly ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'text-white/60 hover:text-white'}`}
+              >
+                Yearly
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${yearly ? 'bg-white/20 text-white' : 'bg-amber-500/15 text-amber-400'}`}>
+                  SAVE 20%
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Error message */}
         {error && (
           <div className="max-w-lg mx-auto mb-8 bg-red-500/10 border border-red-500/20 rounded-xl px-6 py-4 text-red-400 text-center text-sm">
@@ -265,8 +298,22 @@ export default function PricingPage() {
               </span>
               <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-2">Pro</h3>
               <p className="text-5xl font-bold mb-1">
-                {formatPrice(PRICING[location.currency.code].pro, location.currency.code)}<span className="text-lg text-white/40">/mo</span>
+                {formatPrice(
+                  (yearly ? PRICING_YEARLY_MONTHLY_EQUIV : PRICING)[location.currency.code].pro,
+                  location.currency.code
+                )}
+                <span className="text-lg text-white/40">/mo</span>
               </p>
+              {yearly && (
+                <p className="text-xs text-white/40 mb-2">
+                  billed annually · {formatPrice(PRICING_YEARLY_MONTHLY_EQUIV[location.currency.code].pro * 12, location.currency.code)}/yr
+                </p>
+              )}
+              {!isPro && (
+                <p className="text-xs text-emerald-400 font-semibold mb-2">
+                  🎁 Start with 7 days free — £0 today, first charge day 8. Cancel anytime.
+                </p>
+              )}
               <p className="text-sm text-white/30 mb-2">For freelance creatives looking for work</p>
               <p className="text-xs text-white/50 mb-8 italic">Get matched, apply, and land real projects</p>
               <ul className="space-y-4 mb-8 flex-1">
@@ -293,7 +340,7 @@ export default function PricingPage() {
                       Loading...
                     </span>
                   ) : (
-                    user ? 'Upgrade to Pro' : 'Pro'
+                    user ? 'Start 7-day free trial' : 'Start 7-day free trial'
                   )}
                 </button>
               )}

@@ -17,6 +17,11 @@ interface UserData {
   portfolio: string
   created_at: string
   is_pro?: boolean
+  plan?: string
+  trial_ends_at?: string | null
+  stripe_customer_id?: string | null
+  referral_code?: string | null
+  pro_extra_until?: string | null
 }
 
 const NOTIFICATIONS = [
@@ -55,6 +60,10 @@ function DashboardPage() {
   const [professionals, setProfessionals] = useState<{ id: string; name: string; title: string; company: string; city: string; photo_url?: string }[]>([])
   const [matchedActivity, setMatchedActivity] = useState<{ professional: { name: string; title: string; company: string; photo_url: string | null }; project: { id: string; title: string }; action: string; score: number; timeAgo: string }[]>([])
   const [personalMatches, setPersonalMatches] = useState<{ name: string; title: string; company: string; photo_url: string | null; matchScore: number }[]>([])
+  const [referral, setReferral] = useState<{ code: string | null; referrals: number } | null>(null)
+  const [referralCopied, setReferralCopied] = useState(false)
+  const [redeemMsg, setRedeemMsg] = useState<string>('')
+  const [billingLoading, setBillingLoading] = useState(false)
   const loc = detectLocation()
   const proPrice = formatPrice(PRICING[loc.currency.code].pro, loc.currency.code)
 
@@ -161,6 +170,33 @@ function DashboardPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.professionals) setProfessionals(d.professionals) })
       .catch(() => {})
+
+    // Referral: auto-redeem any code stashed by /r/[code] before the user signed
+    // up, then always fetch the user's own code + referral count.
+    let pendingRef: string | null = null
+    try { pendingRef = localStorage.getItem('showbizy_ref') } catch {}
+    const redeem = pendingRef
+      ? fetch('/api/referral/redeem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, code: pendingRef }),
+        })
+          .then(r => r.json())
+          .then((d: { ok?: boolean; rewardDays?: number; error?: string }) => {
+            try { localStorage.removeItem('showbizy_ref') } catch {}
+            if (d?.ok) setRedeemMsg(`🎉 Referral applied — ${d.rewardDays} days of Pro added to your account.`)
+          })
+          .catch(() => {})
+      : Promise.resolve()
+
+    redeem.then(() =>
+      fetch(`/api/referral/me?user_id=${user.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then((d: { code: string | null; referrals: number } | null) => {
+          if (d) setReferral(d)
+        })
+        .catch(() => {})
+    )
   }, [user])
 
   if (loading || !user) {
@@ -187,6 +223,35 @@ function DashboardPage() {
     localStorage.removeItem('showbizy_user')
     router.push('/')
   }
+
+  const openBillingPortal = async () => {
+    if (!user?.stripe_customer_id) return
+    setBillingLoading(true)
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      })
+      const d = await res.json()
+      if (d?.url) window.location.href = d.url
+    } catch {}
+    setBillingLoading(false)
+  }
+
+  const copyInvite = async () => {
+    if (!referral?.code) return
+    const inviteUrl = `${window.location.origin}/r/${referral.code}`
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setReferralCopied(true)
+      setTimeout(() => setReferralCopied(false), 2000)
+    } catch {}
+  }
+
+  const daysLeftInTrial = user?.trial_ends_at && user?.plan === 'pro_trial'
+    ? Math.max(0, Math.ceil((new Date(user.trial_ends_at).getTime() - Date.now()) / 86400000))
+    : null
 
   return (
     <div className="min-h-screen bg-[#030712] text-white">
@@ -227,6 +292,80 @@ function DashboardPage() {
               className="text-white/40 hover:text-white transition text-xl px-2"
             >
               ×
+            </button>
+          </div>
+        )}
+
+        {/* Trial countdown banner */}
+        {user.plan === 'pro_trial' && daysLeftInTrial !== null && (
+          <div className="mb-6 bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/40 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⏳</span>
+              <div>
+                <h3 className="font-bold">Pro trial active</h3>
+                <p className="text-white/60 text-sm">
+                  {daysLeftInTrial === 0
+                    ? 'Last day of your trial — first charge tomorrow.'
+                    : `${daysLeftInTrial} day${daysLeftInTrial === 1 ? '' : 's'} left · first charge on ${new Date(user.trial_ends_at!).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`}
+                </p>
+              </div>
+            </div>
+            {user.stripe_customer_id && (
+              <button
+                onClick={openBillingPortal}
+                disabled={billingLoading}
+                className="text-xs font-semibold px-4 py-2 rounded-lg border border-white/15 hover:bg-white/5 transition disabled:opacity-60"
+              >
+                {billingLoading ? 'Opening…' : 'Manage billing'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Referral redemption notice */}
+        {redeemMsg && (
+          <div className="mb-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-emerald-300 text-sm">
+            {redeemMsg}
+          </div>
+        )}
+
+        {/* Refer & earn invite card */}
+        {referral?.code && (
+          <div className="mb-6 bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-amber-500/20 to-purple-500/20 flex items-center justify-center text-amber-300 text-xl flex-shrink-0">
+              🎁
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold">Refer a creative · earn 1 month Pro free</h3>
+              <p className="text-white/50 text-xs mt-0.5">
+                {referral.referrals === 0
+                  ? 'When they sign up and stay, you both get 30 days of Pro added to your account.'
+                  : `${referral.referrals} successful referral${referral.referrals === 1 ? '' : 's'} · ${referral.referrals * 30} bonus Pro days earned`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <code className="text-amber-300 text-xs font-mono bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                {referral.code}
+              </code>
+              <button
+                onClick={copyInvite}
+                className="text-xs font-semibold px-4 py-2 rounded-lg border border-white/15 hover:bg-white/5 transition"
+              >
+                {referralCopied ? 'Copied!' : 'Copy invite link'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Manage billing button — shown for paying users who aren't in trial */}
+        {user.stripe_customer_id && user.plan !== 'pro_trial' && (user.is_pro || user.plan === 'pro' || user.plan === 'studio') && (
+          <div className="mb-6 text-right">
+            <button
+              onClick={openBillingPortal}
+              disabled={billingLoading}
+              className="text-xs text-white/50 hover:text-white/80 transition underline underline-offset-4 disabled:opacity-60"
+            >
+              {billingLoading ? 'Opening billing portal…' : 'Manage billing / cancel'}
             </button>
           </div>
         )}

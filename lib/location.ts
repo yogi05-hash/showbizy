@@ -22,12 +22,23 @@ export interface PricingData {
   EUR: PricingTier
 }
 
-// Pricing in all currencies
+// Monthly pricing in all currencies (actual Stripe-charged amount is GBP;
+// these displayed numbers are indicative local equivalents).
 export const PRICING: PricingData = {
   INR: { free: 0, pro: 299, studio: 999 },
   USD: { free: 0, pro: 12, studio: 35 },
   GBP: { free: 0, pro: 9, studio: 29 },
   EUR: { free: 0, pro: 10, studio: 33 },
+}
+
+// Yearly-billed monthly-equivalent (≈20% off). Applies to Pro only;
+// Studio stays monthly. Display on the Pro card when the yearly toggle
+// is active. Stripe charges GBP £84/year regardless of displayed currency.
+export const PRICING_YEARLY_MONTHLY_EQUIV: PricingData = {
+  INR: { free: 0, pro: 239, studio: 999 },
+  USD: { free: 0, pro: 10, studio: 35 },
+  GBP: { free: 0, pro: 7, studio: 29 },
+  EUR: { free: 0, pro: 8, studio: 33 },
 }
 
 // Currency symbols mapping
