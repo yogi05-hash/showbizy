@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { detectLocation, detectLocationByIP, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 import { FadeIn, StaggerContainer, StaggerItem, TiltCard, AnimatedCounter } from '@/components/MotionWrap'
+import HeroPulse from '@/components/HeroPulse'
 import { motion } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
@@ -471,6 +472,9 @@ export default function Home() {
             </span>
             <span className="text-xs font-medium text-white/50 tracking-widest uppercase">Live in {location.city}</span>
           </div>
+
+          {/* Pulse strip — live counters per visitor's city */}
+          <HeroPulse city={location.city} country={location.country} />
 
           {/* Main headline with stagger animation */}
           <h1 className="hero-title-1 text-5xl sm:text-6xl md:text-7xl lg:text-[5.8rem] font-extrabold leading-[0.95] mb-3 tracking-[-0.04em]">
