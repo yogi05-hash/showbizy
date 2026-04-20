@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { detectLocation, detectLocationByIP, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 import { FadeIn, StaggerContainer, StaggerItem, TiltCard, AnimatedCounter } from '@/components/MotionWrap'
+import RecentSignupsTicker from '@/components/RecentSignupsTicker'
 import { motion } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
@@ -502,6 +503,9 @@ export default function Home() {
               See Pricing
             </Link>
           </div>
+
+          {/* Real-data social proof — hides itself if not enough recent signups */}
+          <RecentSignupsTicker city={location.city} country={location.country} />
 
           {/* Trust row */}
           <div className="hero-fade-in flex flex-wrap items-center justify-center gap-8 mt-16" style={{ animationDelay: '1s' }}>
