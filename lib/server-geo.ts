@@ -67,8 +67,22 @@ const DEFAULT_CITY_BY_COUNTRY: Record<string, string> = {
 
 export function getServerGeo(req: Request | NextRequest): ServerGeo {
   const h = req.headers
-  const rawCity = h.get('x-vercel-ip-city') || ''
-  const rawCountry = (h.get('x-vercel-ip-country') || '').toUpperCase()
+
+  // URL override for testing — ?country=US or ?country=IN lets anyone
+  // simulate a different visitor without a VPN. Matches the override
+  // behavior in lib/location.ts so client and server stay aligned.
+  let overrideCountry = ''
+  let overrideCity = ''
+  try {
+    const url = new URL((req as Request).url || '')
+    overrideCountry = (url.searchParams.get('country') || '').toUpperCase()
+    overrideCity = url.searchParams.get('city') || ''
+  } catch {
+    // Not a URL-bearing request (unlikely inside a route handler) — fine.
+  }
+
+  const rawCity = overrideCity || h.get('x-vercel-ip-city') || ''
+  const rawCountry = overrideCountry || (h.get('x-vercel-ip-country') || '').toUpperCase()
 
   const city = decodeURIComponent(rawCity).trim()
   const countryCode = rawCountry || 'GB'
@@ -80,6 +94,6 @@ export function getServerGeo(req: Request | NextRequest): ServerGeo {
     city: chosenCity,
     country: chosenCountry,
     countryCode,
-    source: rawCountry ? 'vercel' : 'fallback',
+    source: overrideCountry ? 'vercel' : rawCountry ? 'vercel' : 'fallback',
   }
 }
