@@ -211,74 +211,110 @@ export default function Home() {
     const user = localStorage.getItem('showbizy_user')
     if (user) setIsLoggedIn(true)
 
-    // Detect location — timezone first (instant), then IP (accurate, async)
+    // Detect location — timezone first (instant, for immediate render), then
+    // server IP via /api/geo (accurate, overrides timezone). Server IP is the
+    // source of truth so USA/India visitors whose browser timezone is set to
+    // London don't get fed London content.
     const detectedLocation = detectLocation()
     setLocation(detectedLocation)
     const detectedCities = getCitiesForLocation(detectedLocation)
     setCities(detectedCities)
 
-    // IP geolocation override (more reliable than timezone for remote desktops)
-    detectLocationByIP().then(ipLoc => {
-      if (ipLoc) {
-        setLocation(ipLoc)
-        // Update cities based on IP-detected location
-        const ipCities = getCitiesForLocation(ipLoc)
-        if (ipCities.length > 0) setCities(ipCities)
-      }
-    })
-
-    // Fetch live projects from database — prioritize user's detected location
-    fetch('/api/projects')
-      .then(r => r.json())
-      .then(d => {
-        if (d.projects?.length) {
-          const detectedCity = detectedLocation.city.toLowerCase()
-          const detectedCountry = detectedLocation.country.toLowerCase()
-          // Sort: local projects first, then others
-          const sorted = [...d.projects].sort((a: { location?: string }, b: { location?: string }) => {
-            const aLoc = (a.location || '').toLowerCase()
-            const bLoc = (b.location || '').toLowerCase()
-            const aLocal = aLoc.includes(detectedCity) || aLoc.includes(detectedCountry) ? 1 : 0
-            const bLocal = bLoc.includes(detectedCity) || bLoc.includes(detectedCountry) ? 1 : 0
-            return bLocal - aLocal
+    // Ask the server what city it thinks the visitor is in based on real IP.
+    // Then use THAT city for every downstream fetch, so cached browser
+    // timezones (VPN / travel / old machine settings) never mis-target content.
+    fetch('/api/geo')
+      .then(r => r.ok ? r.json() : null)
+      .then((geo: { city: string; country: string; countryCode: string } | null) => {
+        if (geo?.city) {
+          // Hydrate location with server truth
+          const symbolMap: Record<string, string> = { GBP: '£', USD: '$', INR: '₹', EUR: '€' }
+          const currencyByCountry: Record<string, 'GBP' | 'USD' | 'INR' | 'EUR'> = {
+            UK: 'GBP', USA: 'USD', India: 'INR', Germany: 'EUR', France: 'EUR',
+            Spain: 'EUR', Italy: 'EUR', Netherlands: 'EUR', Ireland: 'EUR',
+          }
+          const currencyCode = currencyByCountry[geo.country] || 'GBP'
+          setLocation({
+            city: geo.city,
+            country: geo.country,
+            currency: { code: currencyCode, symbol: symbolMap[currencyCode] || '£' },
           })
-          setLiveProjects(sorted.slice(0, 3))
+          const newCities = getCitiesForLocation({ city: geo.city, country: geo.country, currency: { code: currencyCode, symbol: symbolMap[currencyCode] || '£' } })
+          if (newCities.length > 0) setCities(newCities)
         }
+        return geo
       })
-      .catch(() => {})
+      .then((geo) => {
+        // Now fetch all location-sensitive data with the server-trusted city.
+        // Each API route also falls back to server IP internally, so even if
+        // we pass nothing they'd do the right thing — but passing makes it
+        // explicit and avoids double-work.
+        const fetchCity = geo?.city || detectedLocation.city
 
-    // Fetch real matched activity for social proof
+        // Projects: route sorts local-first using server geo automatically
+        // (we still sort client-side below as a belt-and-braces).
+        fetch('/api/projects')
+          .then(r => r.json())
+          .then(d => {
+            if (d.projects?.length) {
+              const cityLc = fetchCity.toLowerCase()
+              const countryLc = (geo?.country || detectedLocation.country).toLowerCase()
+              const sorted = [...d.projects].sort((a: { location?: string }, b: { location?: string }) => {
+                const aLoc = (a.location || '').toLowerCase()
+                const bLoc = (b.location || '').toLowerCase()
+                const aScore = (aLoc.includes(cityLc) ? 2 : 0) + (aLoc.includes(countryLc) ? 1 : 0)
+                const bScore = (bLoc.includes(cityLc) ? 2 : 0) + (bLoc.includes(countryLc) ? 1 : 0)
+                return bScore - aScore
+              })
+              setLiveProjects(sorted.slice(0, 3))
+            }
+          })
+          .catch(() => {})
+
+        // Real professionals in this city. The API route now defaults to
+        // server geo if we pass nothing, but we still pass fetchCity so the
+        // response + the section title on the client agree.
+        fetch(`/api/professionals?limit=12&city=${encodeURIComponent(fetchCity)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            const list = d?.professionals || []
+            if (list.length >= 3) {
+              setRealPros(list)
+            } else {
+              // Not enough in this city — try global (no city param)
+              fetch('/api/professionals?limit=12&city=')
+                .then(r => r.ok ? r.json() : null)
+                .then(g => {
+                  if (g?.professionals) setRealPros(g.professionals)
+                })
+                .catch(() => {})
+            }
+          })
+          .catch(() => {})
+      })
+      .catch(() => {
+        // /api/geo failed — fall back to the original timezone-based behavior
+        // so the homepage is never broken.
+        fetch('/api/projects')
+          .then(r => r.json())
+          .then(d => d.projects?.length && setLiveProjects(d.projects.slice(0, 3)))
+          .catch(() => {})
+        fetch(`/api/professionals?limit=12&city=${encodeURIComponent(detectedLocation.city)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d?.professionals) setRealPros(d.professionals) })
+          .catch(() => {})
+      })
+
+    // Fetch real matched activity for social proof (not location-sensitive)
     fetch('/api/professionals/matched?limit=8')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.matches) {
           setMatchedActivity(d.matches)
-          // Extract unique company names for logo bar
           const companies = [...new Set(d.matches.map((m: {professional:{company:string}}) => m.professional.company).filter(Boolean))] as string[]
           setProCompanies(companies)
         }
       })
-
-    // Fetch real professionals in the visitor's city for the Industry Network section
-    // (replaces the hardcoded fake testimonials). Falls back to global if the city has few.
-    const proFetchCity = detectedLocation.city
-    fetch(`/api/professionals?limit=12${proFetchCity ? `&city=${encodeURIComponent(proFetchCity)}` : ''}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        const list = d?.professionals || []
-        if (list.length >= 3) {
-          setRealPros(list)
-        } else {
-          // Not enough in this city — try global
-          fetch('/api/professionals?limit=12')
-            .then(r => r.ok ? r.json() : null)
-            .then(g => {
-              if (g?.professionals) setRealPros(g.professionals)
-            })
-            .catch(() => {})
-        }
-      })
-      .catch(() => {})
       .catch(() => {})
 
     // Fetch featured jobs from API — localized by country

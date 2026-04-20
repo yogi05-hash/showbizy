@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getServerGeo } from '@/lib/server-geo'
 
 // GET: List all projects with filters
 export async function GET(req: Request) {
@@ -8,7 +9,10 @@ export async function GET(req: Request) {
     const stream = searchParams.get('stream')
     const location = searchParams.get('location')
     const status = searchParams.get('status') || 'recruiting'
-    
+    const localFirst = searchParams.get('localFirst') !== 'false' // default true
+
+    const serverGeo = getServerGeo(req)
+
     let query = supabaseAdmin
       .from('showbizy_projects')
       .select(`
@@ -30,7 +34,7 @@ export async function GET(req: Request) {
     if (stream) {
       query = query.eq('stream', stream)
     }
-    
+
     if (location) {
       query = query.ilike('location', `%${location}%`)
     }
@@ -43,7 +47,7 @@ export async function GET(req: Request) {
     }
 
     // Format projects to match frontend expectations
-    const formattedProjects = projects?.map((project: any) => ({
+    let formattedProjects = projects?.map((project: any) => ({
       id: project.id,
       title: project.title,
       stream: project.stream,
@@ -66,7 +70,29 @@ export async function GET(req: Request) {
       milestones: generateMilestones(project.timeline, project.created_at)
     })) || []
 
-    return NextResponse.json({ projects: formattedProjects })
+    // Sort: visitor's real IP city first, then country, then everything else.
+    // Keeps the top-of-list relevant to whoever's actually viewing — not
+    // whatever the browser timezone reported.
+    if (localFirst && !location) {
+      const cityLc = serverGeo.city.toLowerCase()
+      const countryLc = serverGeo.country.toLowerCase()
+      formattedProjects = formattedProjects
+        .map((p: { location: string }, i: number) => {
+          const loc = (p.location || '').toLowerCase()
+          const cityScore = loc.includes(cityLc) ? 2 : 0
+          const countryScore = loc.includes(countryLc) ? 1 : 0
+          return { p, sortKey: cityScore + countryScore, idx: i }
+        })
+        .sort((a, b) => b.sortKey - a.sortKey || a.idx - b.idx)
+        .map(x => x.p) as typeof formattedProjects
+    }
+
+    return NextResponse.json({
+      projects: formattedProjects,
+      cityUsed: serverGeo.city,
+      countryUsed: serverGeo.country,
+      geoSource: serverGeo.source,
+    })
 
   } catch (error) {
     console.error('Projects GET error:', error)

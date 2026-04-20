@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getServerGeo } from '@/lib/server-geo'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
@@ -23,8 +24,12 @@ interface Row {
 // 2. Otherwise fall back to global last-30-days.
 // 3. Otherwise return an empty list → the ticker component hides itself.
 export async function GET(req: NextRequest) {
-  const countryHint = (req.nextUrl.searchParams.get('country') || '').trim()
-  const cityHint = req.nextUrl.searchParams.get('city') || ''
+  // Client-passed hints win; server-IP geo is the fallback so USA/India
+  // visitors whose browser timezone is set to London still get their real
+  // country's signups.
+  const serverGeo = getServerGeo(req)
+  const countryHint = (req.nextUrl.searchParams.get('country') || serverGeo.country).trim()
+  const cityHint = req.nextUrl.searchParams.get('city') || serverGeo.city
 
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
