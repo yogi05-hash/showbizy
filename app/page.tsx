@@ -205,6 +205,7 @@ export default function Home() {
   const [liveProjects, setLiveProjects] = useState<{id:string;title:string;stream:string;streamIcon:string;genre:string;location:string;timeline:string;description:string;teamSize:number;filledRoles:number;status:string;roles:{role:string;filled:boolean}[]}[]>([])
   const [matchedActivity, setMatchedActivity] = useState<{professional:{name:string;title:string;company:string;photo_url:string|null};project:{id:string;title:string};action:string;score:number;timeAgo:string}[]>([])
   const [proCompanies, setProCompanies] = useState<string[]>([])
+  const [realPros, setRealPros] = useState<{id:string;name:string;title:string;company:string;city:string;photo_url:string|null;headline:string|null;streams:string[]|null}[]>([])
 
   useEffect(() => {
     const user = localStorage.getItem('showbizy_user')
@@ -257,6 +258,27 @@ export default function Home() {
           setProCompanies(companies)
         }
       })
+
+    // Fetch real professionals in the visitor's city for the Industry Network section
+    // (replaces the hardcoded fake testimonials). Falls back to global if the city has few.
+    const proFetchCity = detectedLocation.city
+    fetch(`/api/professionals?limit=12${proFetchCity ? `&city=${encodeURIComponent(proFetchCity)}` : ''}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const list = d?.professionals || []
+        if (list.length >= 3) {
+          setRealPros(list)
+        } else {
+          // Not enough in this city — try global
+          fetch('/api/professionals?limit=12')
+            .then(r => r.ok ? r.json() : null)
+            .then(g => {
+              if (g?.professionals) setRealPros(g.professionals)
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
       .catch(() => {})
 
     // Fetch featured jobs from API — localized by country
@@ -350,7 +372,6 @@ export default function Home() {
         <div className="hidden md:flex items-center gap-6 text-sm">
           <Link href="#projects" className="text-white/50 hover:text-white transition">Projects</Link>
           <Link href="#how-it-works" className="text-white/50 hover:text-white transition">How it works</Link>
-          <Link href="#creatives" className="text-white/50 hover:text-white transition">Creatives</Link>
           <Link href="/jobs" className="text-amber-400 hover:text-amber-300 transition font-medium">Jobs</Link>
           <Link href="/pricing" className="text-white/50 hover:text-white transition">Pricing</Link>
         </div>
@@ -390,7 +411,6 @@ export default function Home() {
             <div className="flex flex-col px-6 py-4 gap-1">
               <Link href="#projects" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">Projects</Link>
               <Link href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">How it works</Link>
-              <Link href="#creatives" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">Creatives</Link>
               <Link href="/jobs" onClick={() => setMobileMenuOpen(false)} className="text-amber-400 hover:text-amber-300 transition py-3 border-b border-white/5 font-medium">Jobs 🔥</Link>
               <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-white/70 hover:text-white transition py-3 border-b border-white/5">Pricing</Link>
               {isLoggedIn ? (
@@ -936,61 +956,67 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS ─── */}
-      <section id="creatives" className="max-w-7xl mx-auto px-6 py-24">
+      {/* ─── INDUSTRY PROS — real profiles, honest framing ─── */}
+      <section id="industry" className="max-w-7xl mx-auto px-6 py-24">
         <FadeIn>
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">From the Community</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives who shipped</h2>
-            <p className="text-white/50 text-lg max-w-xl mx-auto">Real people. Real projects. Real credits.</p>
+            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">Industry Network</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-3 mb-4">Creatives in {location.city}</h2>
+            <p className="text-white/50 text-lg max-w-xl mx-auto">Real industry professionals indexed from public profiles — directors, producers, editors, musicians active in your city.</p>
           </div>
         </FadeIn>
 
-        <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.1}>
-          {getTestimonials(cities).map((t) => (
-            <StaggerItem key={t.name}>
-            <TiltCard
-              className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-transparent transition-all duration-500 testimonial-card"
-              maxTilt={3}
-            >
-              <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none" />
+        {realPros.length >= 3 ? (
+          <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.1}>
+            {realPros.slice(0, 6).map((p) => (
+              <StaggerItem key={p.id}>
+                <TiltCard
+                  className="group relative bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:border-transparent transition-all duration-500 testimonial-card"
+                  maxTilt={3}
+                >
+                  <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 flex-shrink-0 bg-white/5">
+                        {p.photo_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={p.photo_url}
+                            alt={p.name}
+                            width={56}
+                            height={56}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-base font-bold">{(p.name || '?').charAt(0)}</div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{p.name}</p>
+                        <p className="text-xs text-amber-400 truncate">{p.title}</p>
+                        <p className="text-xs text-white/40 truncate">{p.company} · {p.city}</p>
+                      </div>
+                    </div>
 
-              <div className="relative z-10">
-                {/* Stars */}
-                <div className="flex gap-0.5 mb-4">
-                  {[1,2,3,4,5].map(s => <span key={s} className="text-amber-400 text-xs">★</span>)}
-                </div>
+                    {p.headline && (
+                      <p className="text-white/60 leading-relaxed text-sm mb-4 line-clamp-3">{p.headline}</p>
+                    )}
 
-                {/* Quote */}
-                <p className="text-white/60 leading-relaxed text-sm mb-5">&ldquo;{t.quote}&rdquo;</p>
-
-                {/* Project credit badge */}
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/[0.06]">
-                  <span className="text-[10px] bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full font-medium">🎬 {t.project}</span>
-                  <span className="text-[10px] text-white/25">{t.credits} {t.credits === 1 ? 'credit' : 'credits'} on ShowBizy</span>
-                </div>
-
-                {/* Author */}
-                <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 flex-shrink-0">
-                    <Image
-                      src={t.photo}
-                      alt={t.name}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
+                    <div className="flex flex-wrap gap-1.5 pt-3 border-t border-white/[0.06]">
+                      {(p.streams || []).slice(0, 3).map((s) => (
+                        <span key={s} className="text-[10px] bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full font-medium">{s}</span>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">{t.name}</p>
-                    <p className="text-xs text-white/40">{t.role} • {t.city}</p>
-                  </div>
-                </div>
-              </div>
-            </TiltCard>
-            </StaggerItem>
-          ))}
-        </StaggerContainer>
+                </TiltCard>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        ) : (
+          <p className="text-center text-white/30 text-sm">We&apos;re still indexing creatives in {location.city}. Check back soon — new profiles added daily.</p>
+        )}
       </section>
 
       {/* ─── INDUSTRY JOBS ─── */}
