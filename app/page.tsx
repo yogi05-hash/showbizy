@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { detectLocation, detectLocationByIP, getCitiesForLocation, formatPrice, PRICING, type LocationData } from '@/lib/location'
 import { FadeIn, StaggerContainer, StaggerItem, TiltCard, AnimatedCounter } from '@/components/MotionWrap'
 import RecentSignupsTicker from '@/components/RecentSignupsTicker'
+import HeroAvatarStrip from '@/components/HeroAvatarStrip'
 import { motion } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
@@ -506,6 +507,11 @@ export default function Home() {
 
           {/* Real-data social proof — hides itself if not enough recent signups */}
           <RecentSignupsTicker city={location.city} country={location.country} />
+
+          {/* Real-face avatar strip — stacked photos of 4 real creatives in the visitor's city */}
+          <div className="flex justify-center">
+            <HeroAvatarStrip city={location.city} />
+          </div>
 
           {/* Trust row */}
           <div className="hero-fade-in flex flex-wrap items-center justify-center gap-8 mt-16" style={{ animationDelay: '1s' }}>
