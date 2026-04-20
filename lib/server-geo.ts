@@ -81,7 +81,14 @@ export function getServerGeo(req: Request | NextRequest): ServerGeo {
     // Not a URL-bearing request (unlikely inside a route handler) — fine.
   }
 
-  const rawCity = overrideCity || h.get('x-vercel-ip-city') || ''
+  // Country override (?country=US) should also reset the city — otherwise we
+  // end up combining an overridden country with the real IP's city (e.g.
+  // "USA + Woolwich") which looks broken in testing.
+  const rawCity = overrideCity
+    ? overrideCity
+    : overrideCountry
+      ? '' // discard real IP city when country is overridden; let default map pick
+      : h.get('x-vercel-ip-city') || ''
   const rawCountry = overrideCountry || (h.get('x-vercel-ip-country') || '').toUpperCase()
 
   const city = decodeURIComponent(rawCity).trim()
