@@ -35,11 +35,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'DB fetch failed', details: error }, { status: 500 })
   }
 
-  // Only free users. Exclude anyone already on Pro, Studio, or already used the trial.
+  // Exclusions:
+  //  - Already on Pro / Studio / mid-trial
+  //  - Seed accounts (seed-<uuid>@showbizy.ai) — these are synthetic users
+  //    the project-generation cron creates to fill roles for Apollo pros we
+  //    don't have real signups for. They're not real people and we shouldn't
+  //    email them.
+  //  - RFC-reserved / obvious dummy domains that will bounce and burn
+  //    sender reputation (example.com, test.com, example.org).
+  const isObviouslyFake = (email: string): boolean => {
+    const e = email.toLowerCase()
+    if (e.startsWith('seed-') && e.endsWith('@showbizy.ai')) return true
+    if (/@(example|test)\.(com|org|net)$/.test(e)) return true
+    return false
+  }
+
   const freeUsers = (users || []).filter(u =>
     !u.is_pro &&
     (!u.plan || u.plan === 'free') &&
-    !u.trial_started_at
+    !u.trial_started_at &&
+    !isObviouslyFake(u.email)
   )
 
   const targets = explicitLimit ? freeUsers.slice(0, explicitLimit) : freeUsers
@@ -90,8 +105,12 @@ export async function POST(req: NextRequest) {
       log.push({ email: user.email, status: 'failed', error: msg })
       console.error(`[trial-blast] ${user.email}: ${msg}`)
     }
-    // Zoho throttle — 1 email / sec keeps us well under their limits.
-    await new Promise(r => setTimeout(r, 1000))
+    // Zoho throttle — 1 email / sec triggered "Unusual sending activity" at
+    // 42 emails. Slowing to 1 email every 8 seconds keeps us under Zoho
+    // Standard's burst cap (tested safe at ~450 emails/hour). For a 40-user
+    // list that's ~5-6 min total — fine since this endpoint is not in the
+    // request-response hot path.
+    await new Promise(r => setTimeout(r, 8000))
   }
 
   return NextResponse.json({

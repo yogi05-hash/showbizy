@@ -386,12 +386,24 @@ async function matchAndNotifyUsers(projects: { city: string; project: string; id
 
   if (projectsWithRoles.length === 0) return
 
-  // Fetch ALL users
-  const { data: allUsers } = await supabaseAdmin
+  // Fetch ALL users. We then filter out seed users (synthetic accounts
+  // created upstream to fill Apollo-sourced roles — they have addresses
+  // like seed-<uuid>@showbizy.ai and no real inbox) and obvious dummy
+  // domains. Otherwise we blast our own Zoho domain 10+ times per cron
+  // run, which triggered "550 5.4.6 Unusual sending activity" and blocked
+  // real deliveries.
+  const { data: allUsersRaw } = await supabaseAdmin
     .from('showbizy_users')
     .select('id, name, email, city, streams, skills, is_pro, plan')
     .not('email', 'is', null)
     .limit(200)
+
+  const allUsers = (allUsersRaw || []).filter((u: { email: string }) => {
+    const e = (u.email || '').toLowerCase()
+    if (e.startsWith('seed-') && e.endsWith('@showbizy.ai')) return false
+    if (/@(example|test)\.(com|org|net)$/.test(e)) return false
+    return true
+  })
 
   if (!allUsers?.length) return
 
@@ -565,8 +577,10 @@ ${proNameHtml}
         }
     }
 
-    // Rate limit
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Rate limit — Zoho's burst protection triggered 'Unusual sending
+    // activity' at 500ms. 6s between emails keeps deliveries below its
+    // cap (real throughput ~10/min, well under their 60/min tolerance).
+    await new Promise(resolve => setTimeout(resolve, 6000))
   }
 
   console.log(`[cron] Daily emails sent: ${sent}/${allUsers.length}`)
